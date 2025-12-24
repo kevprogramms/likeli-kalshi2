@@ -1,0 +1,202 @@
+.vaults-page {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+    animation: fadeInUp 600ms ease-out;
+}
+
+.vaults-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tvl-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.tvl-label {
+    font-size: var(--text-sm);
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: var(--font-bold);
+}
+
+.tvl-value {
+    font-size: var(--text-4xl);
+    /* Previously 5xl/4xl */
+    font-weight: var(--font-bold);
+    letter-spacing: -0.03em;
+    color: var(--color-text-primary);
+}
+
+.vaults-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 480px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-secondary);
+}
+
+.search-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4) var(--space-3) 48px;
+    font-size: var(--text-base);
+    color: var(--color-text-primary);
+    background: var(--color-bg-elevated);
+    border: 1px solid transparent;
+    /* No border initially */
+    border-radius: var(--radius-full);
+    transition: all var(--transition-base);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: var(--color-bg-hover);
+    box-shadow: 0 0 0 4px var(--color-primary-subtle);
+}
+
+.filter-actions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.filter-dropdown,
+.time-dropdown {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    background: var(--color-bg-elevated);
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.filter-dropdown:hover,
+.time-dropdown:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+    transform: translateY(-1px);
+}
+
+.vaults-section {
+    margin-bottom: var(--space-12);
+}
+
+.section-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--space-6);
+    padding-left: var(--space-4);
+}
+
+.vaults-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+}
+
+.vaults-grid>* {
+    height: 100%;
+}
+
+.empty-state {
+    padding: var(--space-20);
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-lg);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-xl);
+    border: 1px dashed var(--color-border);
+}
+
+.table-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-6);
+    padding-top: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    border-top: 1px solid var(--color-border);
+}
+
+.pagination {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.page-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+}
+
+.page-btn:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+}
+
+.page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+
+    .vaults-header,
+    .vaults-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-wrapper {
+        max-width: none;
+    }
+
+    .filter-actions {
+        justify-content: flex-end;
+    }
+
+    .vaults-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-5);
+    }
+}
