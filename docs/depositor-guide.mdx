@@ -1,0 +1,210 @@
+# Depositor Guide
+
+A complete guide for investors who want to allocate capital to prediction funds on Likeli.
+
+---
+
+## Important Disclaimers
+
+> **⚠️ Risk Warning**
+
+Before depositing, understand:
+
+1. **Manager Risk**: While managers cannot withdraw your funds directly, they can lose money through poor trading decisions.
+
+2. **Smart Contract Risk**: Funds are held in on-chain program accounts. While audited, no smart contract is 100% risk-free.
+
+3. **Market Risk**: Prediction markets can be volatile. Positions may lose value rapidly.
+
+4. **Lockup Risk**: During the Trading stage, you **cannot** withdraw. Your funds are locked.
+
+5. **No Guarantees**: Past performance doesn't guarantee future results.
+
+**Do your own research before investing.**
+
+---
+
+## Understanding Fees
+
+### Deposit Fee (0-3%)
+
+- Charged **immediately** when you deposit
+- Goes directly to the manager
+- Reduces your effective deposit amount
+
+**Example**: 
+- You deposit 1,000 USDC
+- Fund has 2% deposit fee
+- Manager receives 20 USDC
+- 980 USDC enters the vault
+- You receive shares worth 980 USDC
+
+### Performance Fee (0-30%)
+
+- Charged **only on profits**
+- Calculated when fund closes
+- Paid automatically on first redemption
+
+**Example**:
+- Initial AUM: 10,000 USDC
+- Final balance: 12,000 USDC
+- Profit: 2,000 USDC
+- Performance fee (20%): 400 USDC
+- Distributable: 11,600 USDC
+
+If there's no profit, there's no performance fee.
+
+---
+
+## Fund Lifecycle for Investors
+
+### Open Stage ✅
+- **Deposits**: Allowed
+- **Withdrawals**: Allowed
+- **What to expect**: Fund is accepting capital, no trading yet
+
+### Trading Stage 🔒
+- **Deposits**: Not allowed
+- **Withdrawals**: Not allowed
+- **What to expect**: Manager is actively trading, monitor performance
+
+### Closed Stage ✅
+- **Deposits**: Not allowed
+- **Withdrawals**: Allowed (redemption)
+- **What to expect**: Trading complete, redeem your shares for USDC
+
+---
+
+## How to Deposit
+
+### Step 1: Find a Fund
+Browse funds at `/vaults` and evaluate:
+- Manager track record
+- Strategy description
+- Fee structure
+- Timeline (trading period)
+- Current AUM
+
+### Step 2: Connect Wallet
+Click **Connect Wallet** and select your Solana wallet.
+
+### Step 3: Deposit USDC
+
+1. Navigate to the fund's page
+2. Click **Deposit**
+3. Enter USDC amount
+4. Review:
+   - Deposit fee deduction
+   - Shares you'll receive
+5. Click **Confirm Deposit**
+6. Sign the transaction
+
+### Step 4: Receive Shares
+After confirmation:
+- USDC is transferred to the vault
+- Deposit fee is sent to manager
+- Share tokens are minted to your wallet
+
+---
+
+## Monitoring Your Investment
+
+### Fund Page
+Track your investment at `/vaults/{fund-address}`:
+
+| Metric | Description |
+|--------|-------------|
+| Your Shares | How many share tokens you hold |
+| Share Price | Current value per share |
+| Your Value | Shares × Share Price |
+| Fund Performance | Overall return since Trading start |
+| Positions | What the manager is trading |
+
+### Important Notes
+- Share price changes as the fund trades
+- Monitor regularly during Trading stage
+- You cannot intervene in trading decisions
+
+---
+
+## How to Withdraw
+
+### During Open Stage
+If the fund is still in Open stage:
+
+1. Navigate to the fund page
+2. Click **Withdraw**
+3. Enter share amount
+4. You receive proportional USDC
+5. Sign and confirm
+
+### During Closed Stage (Redemption)
+After the fund is finalized:
+
+1. Navigate to the fund page
+2. Click **Redeem Shares**
+3. Enter share amount (or max)
+4. Review USDC you'll receive
+5. Sign and confirm
+
+The first redeemer triggers the performance fee payment. Subsequent redemptions proceed normally.
+
+---
+
+## Evaluating Funds
+
+Before investing, consider:
+
+### Manager Factors
+| Factor | Questions |
+|--------|-----------|
+| Track Record | Previous fund performance? |
+| Strategy | Clear and sensible approach? |
+| Communication | Active updates? |
+| Reputation | Community standing? |
+
+### Fund Structure
+| Factor | Consideration |
+|--------|---------------|
+| Deposit Fee | Higher = more friction |
+| Perf Fee | Industry standard is 20-30% |
+| Duration | Can you lock funds this long? |
+| AUM | Too large may limit returns |
+
+### Red Flags 🚩
+- Unrealistic return promises
+- Vague strategy description
+- No manager history
+- Excessive fees (3%/30% maxes)
+
+---
+
+## Tax Considerations
+
+Prediction market trading may have tax implications:
+- Consult a tax professional
+- Keep records of deposits and redemptions
+- Note: This is not tax advice
+
+---
+
+## FAQ
+
+**Q: Can the manager steal my funds?**
+A: No. The program enforces that managers can only trade on DFlow markets. They cannot transfer USDC to themselves.
+
+**Q: What if the manager loses everything?**
+A: You would receive little or no USDC at redemption. This is trading risk.
+
+**Q: Can I withdraw early?**
+A: Only during Open stage. During Trading, funds are locked.
+
+**Q: What happens if markets don't resolve?**
+A: The manager must wait or exit at market price before finalizing.
+
+---
+
+## Next Steps
+
+- [Browse Available Funds →](/vaults)
+- [Understanding Fund Lifecycle →](/docs/fund-lifecycle)

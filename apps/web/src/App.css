@@ -1,0 +1,31 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  padding-top: 64px;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 240px;
+  padding: var(--space-8);
+  min-height: calc(100vh - 64px);
+  transition: margin-left var(--transition-base);
+}
+
+.main-content.expanded {
+  margin-left: 0;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 0;
+    padding: var(--space-4);
+  }
+}

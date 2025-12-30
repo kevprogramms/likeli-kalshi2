@@ -1,0 +1,23 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+vaults = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+
+[programs.devnet]
+vaults = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+
+[programs.mainnet]
+# Update after first mainnet deploy:
+# vaults = "<MAINNET_PROGRAM_ID>"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

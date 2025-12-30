@@ -1,0 +1,75 @@
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-6);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 1000;
+}
+
+.left {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.logoIcon {
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    animation: glow 3s infinite;
+}
+
+.logoText {
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--color-primary) 0%, #FFFFFF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.center {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.navLink {
+    padding: var(--space-2) var(--space-4);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.navLink:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-hover);
+}
+
+.navLink.active {
+    color: var(--color-primary);
+    background: var(--color-primary-subtle);
+}
+
+.right {
+    display: flex;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .center {
+        display: none;
+    }
+}

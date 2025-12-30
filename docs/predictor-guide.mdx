@@ -1,0 +1,125 @@
+# Predictor Guide
+
+A complete guide for managers who want to create and manage prediction funds on Likeli.
+
+---
+
+## Before You Begin
+
+Before creating a fund, consider the following:
+
+### Strategy
+Define your trading strategy clearly. Investors will evaluate your fund based on your approach—whether you focus on specific categories (crypto, economics, sports) or use a diversified approach.
+
+### Lifecycle
+Understand the fund lifecycle:
+- **Open Stage**: Accept deposits, no trading allowed
+- **Trading Stage**: Execute trades, deposits/withdrawals locked
+- **Closed Stage**: Positions settled, investors can redeem
+
+### Fees
+You'll set two fee parameters at creation:
+- **Deposit Fee** (0-3%): Charged immediately on each deposit
+- **Performance Fee** (0-30%): Charged only on profits at fund closure
+
+### Timeline
+Choose your trading window carefully:
+- **Trading Start Time**: When the Open stage ends and Trading begins
+- **Trading End Time**: When trading stops and Settlement begins
+
+> **⚠️ Important**: Fund parameters cannot be changed after creation.
+
+---
+
+## Connecting Your Wallet
+
+Likeli Funds uses the Solana Wallet Adapter. Supported wallets include:
+
+- **Phantom** (recommended)
+- **Solflare**
+- **Backpack**
+- **Ledger** (via supported wallet)
+
+1. Click **Connect Wallet** in the navigation bar
+2. Select your preferred wallet
+3. Approve the connection request
+
+---
+
+## Creating a Fund
+
+Navigate to `/vaults/create` to begin.
+
+### Fund Parameters
+
+| Parameter | Description | Constraints |
+|-----------|-------------|-------------|
+| **Fund Name** | Display name for your fund | Max 32 characters |
+| **Fund Symbol** | Short ticker symbol | Max 8 characters |
+| **Deposit Fee** | Fee on deposits | 0-3% (300 bps max) |
+| **Performance Fee** | Fee on profits | 0-30% (3000 bps max) |
+| **Trading Start Time** | When trading begins | Must be in future |
+| **Trading End Time** | When trading ends | Must be after start |
+
+### Creation Process
+
+1. Fill in all required fields
+2. Review the parameters carefully
+3. Click **Create Fund**
+4. Sign the transaction in your wallet
+5. Wait for confirmation
+
+### What Happens On-Chain
+
+When you create a fund:
+- A new `FundState` PDA account is created
+- A share token mint is created (controlled by the fund PDA)
+- A vault USDC ATA is created (controlled by the fund PDA)
+- Your wallet is registered as the fund manager
+
+---
+
+## Promoting Your Fund
+
+After creation, promote your fund to attract investors:
+
+### Share Your Fund Link
+```
+https://likeli.fund/vaults/{your-fund-address}
+```
+
+### Communicate Your Strategy
+Be transparent about:
+- Your trading approach
+- Target markets (categories)
+- Risk management
+- Expected timeline
+- Historical performance (if applicable)
+
+### Set Expectations
+- Be clear about potential risks
+- Never promise guaranteed returns
+- Explain the fee structure upfront
+
+---
+
+## Fee Collection
+
+### Deposit Fees
+- Transferred **immediately** to your fee wallet when investors deposit
+- You receive: `deposit_amount * deposit_fee_bps / 10_000`
+- Example: 2% fee on 1000 USDC = 20 USDC to you, 980 USDC to vault
+
+### Performance Fees
+- Calculated only when the fund is finalized
+- Based on **profit only** (final balance - initial AUM)
+- Automatically paid on the first investor redemption
+- Formula: `max(0, final_balance - initial_aum) * perf_fee_bps / 10_000`
+
+---
+
+## Next Steps
+
+- [Managing Your Fund →](/docs/managing-a-fund)
+- [Executing Trades →](/docs/making-predictions)
+- [Fund Lifecycle Details →](/docs/fund-lifecycle)

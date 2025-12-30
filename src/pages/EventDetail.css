@@ -1,0 +1,1022 @@
+/* Polymarket-style Detail */
+.poly-detail {
+    width: 100%;
+}
+
+.detail-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    color: var(--color-text-tertiary);
+}
+
+.poly-back {
+    display: inline-block;
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--space-4);
+}
+
+.poly-back:hover {
+    color: var(--color-primary);
+}
+
+/* Main Card */
+.poly-card {
+    width: 100%;
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+[data-theme="light"] .poly-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+}
+
+/* Header */
+.poly-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .poly-header {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.poly-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.poly-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #E63946 0%, #D62839 100%);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: white;
+}
+
+.poly-title-area h1 {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    margin: 0 0 4px 0;
+    color: var(--color-text-primary);
+}
+
+.poly-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 11px;
+}
+
+.poly-brand {
+    color: var(--color-primary);
+    font-weight: var(--font-bold);
+}
+
+.poly-live {
+    color: var(--color-success);
+}
+
+.poly-resolved {
+    color: var(--color-success);
+    font-weight: var(--font-semibold);
+}
+
+.poly-closed {
+    color: var(--color-text-muted);
+}
+
+.poly-sep {
+    color: var(--color-text-muted);
+}
+
+.poly-vol {
+    color: var(--color-text-tertiary);
+}
+
+.poly-header-right {
+    text-align: right;
+}
+
+.poly-price {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+    line-height: 1;
+}
+
+.poly-change {
+    font-size: var(--text-sm);
+    margin-top: 2px;
+}
+
+.poly-change.positive {
+    color: var(--color-success);
+}
+
+.poly-change.negative {
+    color: var(--color-danger);
+}
+
+/* Chart Controls */
+.poly-chart-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"] .poly-chart-controls {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.poly-toggles {
+    display: flex;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+[data-theme="light"] .poly-toggles {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.poly-toggles button {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.poly-toggles button.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-primary);
+}
+
+[data-theme="light"] .poly-toggles button.active {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.poly-times {
+    display: flex;
+    gap: 2px;
+}
+
+.poly-times button {
+    padding: var(--space-1) var(--space-2);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.poly-times button:hover {
+    color: var(--color-text-secondary);
+}
+
+.poly-times button.active {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .poly-times button.active {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* Chart */
+.poly-chart {
+    display: flex;
+    padding: var(--space-4) 0;
+    height: 300px;
+}
+
+.poly-y-left,
+.poly-y-right {
+    width: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+.poly-y-right {
+    text-align: right;
+}
+
+.poly-chart-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.poly-chart-area svg {
+    width: 100%;
+    height: 100%;
+}
+
+.poly-legend {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-3);
+    display: flex;
+    gap: var(--space-4);
+    font-size: 11px;
+}
+
+.legend-red {
+    color: #E63946;
+}
+
+.legend-blue {
+    color: #00D4FF;
+}
+
+/* Trade Section */
+.poly-trade {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: var(--space-4) var(--space-5);
+}
+
+[data-theme="light"] .poly-trade {
+    border-top: 1px solid var(--color-border);
+}
+
+.poly-trade-tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-sm);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: var(--space-3);
+}
+
+.poly-trade-tabs button {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text-tertiary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s;
+}
+
+.poly-trade-tabs button:hover {
+    color: var(--color-text-secondary);
+}
+
+.poly-trade-tabs button.active {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.poly-levels {
+    margin-left: auto;
+    color: var(--color-success);
+    font-size: 11px;
+}
+
+/* Trade Row */
+.poly-trade-row {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.poly-yes,
+.poly-no {
+    flex: 1;
+    max-width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-3) var(--space-4);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.poly-yes {
+    background: rgba(0, 200, 5, 0.15);
+    border-color: rgba(0, 200, 5, 0.3);
+}
+
+.poly-yes:hover,
+.poly-yes.active {
+    background: rgba(0, 200, 5, 0.25);
+    border-color: var(--color-success);
+}
+
+.poly-yes .label {
+    font-size: 11px;
+    color: var(--color-success);
+    font-weight: var(--font-semibold);
+}
+
+.poly-yes .value {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+}
+
+.poly-no {
+    background: rgba(255, 82, 82, 0.15);
+    border-color: rgba(255, 82, 82, 0.3);
+}
+
+.poly-no:hover,
+.poly-no.active {
+    background: rgba(255, 82, 82, 0.25);
+    border-color: var(--color-danger);
+}
+
+.poly-no .label {
+    font-size: 11px;
+    color: var(--color-danger);
+    font-weight: var(--font-semibold);
+}
+
+.poly-no .value {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+}
+
+.poly-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.poly-input label {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.poly-input .input-value {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--color-primary);
+    padding: var(--space-2) var(--space-3);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+}
+
+.poly-input input {
+    width: 80px;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+[data-theme="light"] .poly-input input {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--color-border);
+}
+
+.poly-input input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.poly-input.total .total-value {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+}
+
+/* Trade Mode Toggle */
+.trade-mode-toggle {
+    display: flex;
+    gap: var(--space-2);
+    background: rgba(255, 255, 255, 0.03);
+    padding: var(--space-1);
+    border-radius: var(--radius-md);
+}
+
+.trade-mode-toggle button {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: var(--color-text-tertiary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.trade-mode-toggle button:hover {
+    color: var(--color-text-secondary);
+}
+
+.trade-mode-toggle button.active {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .trade-mode-toggle {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .trade-mode-toggle button.active {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* Action */
+.poly-action {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.poly-action select {
+    flex: 1;
+    padding: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+[data-theme="light"] .poly-action select {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--color-border);
+}
+
+.poly-execute {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: white;
+    background: var(--color-success);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.poly-execute.yes {
+    background: var(--color-success);
+}
+
+.poly-execute.yes:hover:not(:disabled) {
+    background: #00A804;
+}
+
+.poly-execute.no {
+    background: var(--color-danger);
+}
+
+.poly-execute.no:hover:not(:disabled) {
+    background: #E53935;
+}
+
+.poly-execute:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.poly-execute.connect-wallet {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+}
+
+.poly-execute.connect-wallet:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-border-hover);
+}
+
+[data-theme="light"] .poly-execute.connect-wallet {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .poly-execute.connect-wallet:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.poly-cta {
+    flex: 1;
+    display: block;
+    padding: var(--space-4);
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--color-primary);
+    background: var(--color-primary-subtle);
+    border-radius: var(--radius-md);
+}
+
+.poly-cta:hover {
+    background: rgba(230, 57, 70, 0.15);
+}
+
+/* Toast */
+.poly-toast {
+    position: fixed;
+    bottom: var(--space-6);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-success);
+    color: white;
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-medium);
+    font-size: var(--text-sm);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .poly-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+    }
+
+    .poly-chart-controls {
+        flex-direction: column;
+        gap: var(--space-2);
+        align-items: flex-start;
+    }
+
+    .poly-times {
+        flex-wrap: wrap;
+    }
+
+    .poly-trade-row {
+        flex-wrap: wrap;
+    }
+
+    .poly-up,
+    .poly-down {
+        flex: 1 1 45%;
+        max-width: none;
+    }
+
+    .poly-action {
+        flex-direction: column;
+    }
+}
+
+/* Event Image */
+.poly-event-image {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+}
+
+/* Multi-Market Selector */
+.multi-market-selector {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .multi-market-selector {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.market-selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+}
+
+.market-selector-header h3 {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.market-count {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+[data-theme="light"] .market-count {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.market-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.market-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+}
+
+[data-theme="light"] .market-option {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid var(--color-border);
+}
+
+.market-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="light"] .market-option:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.market-option.selected {
+    background: rgba(230, 57, 70, 0.1);
+    border-color: var(--color-primary);
+}
+
+.market-option-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.market-option-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text-primary);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.market-option-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+    margin-left: var(--space-3);
+}
+
+.market-option-price {
+    font-size: var(--text-base);
+    font-weight: var(--font-bold);
+    min-width: 40px;
+    text-align: right;
+}
+
+.market-option-price.high {
+    color: var(--color-success);
+}
+
+.market-option-price.low {
+    color: var(--color-danger);
+}
+
+.market-option-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+}
+
+/* Current Market Info */
+.current-market-info {
+    padding: var(--space-3) var(--space-5);
+    background: rgba(230, 57, 70, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.current-market-info h2 {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+/* Multi-outcome buttons */
+.poly-outcome {
+    flex: 1;
+    max-width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-3) var(--space-4);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.poly-outcome.yes {
+    background: rgba(0, 200, 5, 0.15);
+    border-color: rgba(0, 200, 5, 0.3);
+}
+
+.poly-outcome.yes:hover,
+.poly-outcome.yes.active {
+    background: rgba(0, 200, 5, 0.25);
+    border-color: var(--color-success);
+}
+
+.poly-outcome.yes .label {
+    font-size: 11px;
+    color: var(--color-success);
+    font-weight: var(--font-semibold);
+}
+
+.poly-outcome.no {
+    background: rgba(255, 82, 82, 0.15);
+    border-color: rgba(255, 82, 82, 0.3);
+}
+
+.poly-outcome.no:hover,
+.poly-outcome.no.active {
+    background: rgba(255, 82, 82, 0.25);
+    border-color: var(--color-danger);
+}
+
+.poly-outcome.no .label {
+    font-size: 11px;
+    color: var(--color-danger);
+    font-weight: var(--font-semibold);
+}
+
+.poly-outcome .value {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+}
+
+/* Markets count badge */
+.poly-markets-count {
+    color: var(--color-primary);
+    font-weight: var(--font-medium);
+}
+
+/* External link to original market */
+.poly-external-link {
+    color: var(--color-primary);
+    font-weight: var(--font-medium);
+    text-decoration: none;
+    transition: all 0.15s;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.poly-external-link:hover {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--color-primary);
+}
+/* ============================================
+   TRADING UI ENHANCEMENTS
+   ============================================ */
+
+/* Order Type Toggle (Market/Limit) */
+.poly-order-type-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-lg);
+}
+
+.poly-order-type-toggle button {
+    flex: 1;
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+}
+
+.poly-order-type-toggle button.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+.poly-order-type-toggle button:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Price Input for LIMIT orders */
+.poly-input .price-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    transition: all var(--transition-base);
+}
+
+.poly-input .price-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.poly-input .price-input::placeholder {
+    color: var(--color-text-tertiary);
+}
+
+/* Approval Buttons */
+.poly-execute.approve-usdc,
+.poly-execute.approve-ctf {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+}
+
+.poly-execute.approve-usdc:hover:not(:disabled),
+.poly-execute.approve-ctf:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5558e3 0%, #7c4de8 100%);
+    transform: translateY(-2px);
+}
+
+.poly-execute.approve-usdc:disabled,
+.poly-execute.approve-ctf:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================
+   PREMIUM USDC-BASED TRADING INPUT
+   ============================================ */
+
+/* Input Group Container */
+.poly-input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+/* USDC Input with Icon */
+.poly-input.usdc-input {
+    position: relative;
+}
+
+.poly-input.usdc-input label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+}
+
+.poly-input .input-icon {
+    font-size: 14px;
+}
+
+.poly-input .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.poly-input .currency-symbol {
+    position: absolute;
+    left: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-success);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.poly-input.usdc-input input {
+    width: 100%;
+    padding: 14px 14px 14px 32px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+    border: 2px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    transition: all var(--transition-base);
+}
+
+.poly-input.usdc-input input:focus {
+    outline: none;
+    border-color: var(--color-success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.08) 100%);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.poly-input.usdc-input input::placeholder {
+    color: var(--color-text-tertiary);
+    opacity: 0.5;
+}
+
+/* Shares Display */
+.poly-input.shares-display {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border: 2px solid rgba(99, 102, 241, 0.15);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.poly-input.shares-display label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.poly-input.shares-display .shares-value {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.poly-input.shares-display .shares-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #6366f1;
+    font-variant-numeric: tabular-nums;
+}
+
+.poly-input.shares-display .shares-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-tertiary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .poly-input-group {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation for shares update */
+@keyframes pulse-shares {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.poly-input.shares-display .shares-number {
+    animation: pulse-shares 0.3s ease-in-out;
+}

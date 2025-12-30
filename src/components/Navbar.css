@@ -1,0 +1,223 @@
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-6);
+    background: rgba(18, 18, 18, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 1000;
+}
+
+[data-theme="light"] .navbar {
+    background: rgba(232, 232, 234, 0.9);
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+}
+
+.menu-btn:hover {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.logo-icon {
+    font-size: var(--text-2xl);
+    color: var(--color-primary);
+}
+
+.logo-image {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+}
+
+.logo-text {
+    font-size: 18px;
+    font-weight: var(--font-bold);
+    letter-spacing: -0.03em;
+    color: var(--color-text-primary);
+}
+
+.navbar-center {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+/* Navigation Links with "Animation Logic on Top" */
+.nav-link {
+    padding: var(--space-3) var(--space-5);
+    font-size: 15px;
+    font-weight: var(--font-medium);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-full);
+    /* Pill shape */
+    transition: all var(--transition-base);
+    position: relative;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+}
+
+.nav-link:hover:not(.disabled) {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    /* Subtle pill hover */
+}
+
+.nav-link.active {
+    color: #FFFFFF;
+    background: var(--color-primary);
+    /* Red active tab */
+    font-weight: var(--font-semibold);
+    box-shadow: 0 2px 12px var(--color-primary-glow);
+}
+
+/* Remove the old underline active state - replaced with pill */
+.nav-link.active::after {
+    display: none;
+}
+
+.nav-link.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: var(--color-text-secondary);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+}
+
+.theme-toggle:hover {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .theme-toggle {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .theme-toggle:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.wallet-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+}
+
+.wallet-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-border-hover);
+}
+
+.wallet-btn.connected {
+    background: var(--color-success-bg);
+    border-color: rgba(0, 200, 5, 0.2);
+}
+
+/* Light mode wallet button */
+[data-theme="light"] .wallet-btn {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .wallet-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.wallet-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--color-success);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--color-success);
+}
+
+/* Balance display */
+.balance-display {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+}
+
+.balance-label {
+    color: var(--color-text-tertiary);
+}
+
+.balance-value {
+    color: var(--color-success);
+    font-weight: var(--font-semibold);
+}
+
+@media (max-width: 1024px) {
+    .navbar-center {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0 var(--space-4);
+    }
+
+    .logo-text {
+        display: none;
+    }
+
+    .balance-display {
+        display: none;
+    }
+}

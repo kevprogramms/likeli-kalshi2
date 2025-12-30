@@ -1,0 +1,2 @@
+create_fund::CreateFund<'info>
+create_fund::CreateFund<'_>

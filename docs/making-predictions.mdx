@@ -1,0 +1,180 @@
+# Making Predictions
+
+How to execute trades on DFlow tokenized prediction markets as a fund manager.
+
+---
+
+## Markets Page
+
+Navigate to `/markets` to explore available prediction markets.
+
+### Market Categories
+- **Crypto**: Bitcoin, Ethereum, market caps
+- **Economics**: Fed rates, GDP, inflation
+- **Politics**: Elections, policy decisions
+- **Sports**: Game outcomes, championships
+- **Weather**: Temperature records, natural events
+
+### Filtering & Search
+- Search by keyword or ticker
+- Filter by category
+- Sort by volume, expiration, or liquidity
+- View open markets only
+
+---
+
+## Market Details
+
+Click any market to view details:
+
+| Field | Description |
+|-------|-------------|
+| **Question** | The resolution criteria |
+| **Outcomes** | YES / NO tokens |
+| **Current Prices** | Latest bid/ask prices |
+| **Volume** | 24h trading volume |
+| **Liquidity** | Available depth |
+| **Expiration** | When the market closes |
+| **Resolution Source** | How outcome is determined |
+
+### Understanding Prices
+- Prices range from $0.01 to $0.99
+- Price ≈ implied probability
+- YES at $0.70 means ~70% chance of happening
+- YES + NO prices = $1.00 (minus spread)
+
+---
+
+## Executing a Trade
+
+### Step 1: Select Market
+Choose a market from the Markets page.
+
+### Step 2: Choose Direction
+- **BUY YES**: You believe the event will happen
+- **BUY NO**: You believe the event won't happen
+- **SELL YES**: Exit an existing YES position
+- **SELL NO**: Exit an existing NO position
+
+### Step 3: Enter Size
+Specify USDC amount (for buys) or token amount (for sells).
+
+### Step 4: Review Quote
+Before confirming, you'll see:
+- **Input Amount**: What you're spending
+- **Output Amount**: Tokens you'll receive
+- **Price**: Effective price per token
+- **Fee**: Platform/routing fees
+- **Price Impact**: How your trade moves the market
+
+### Step 5: Confirm & Sign
+- Click **Execute Trade**
+- Sign the transaction in your wallet
+- Wait for on-chain confirmation
+
+---
+
+## Technical Order Process
+
+Understanding how trades are executed technically:
+
+### 1. Quote Request
+The client requests a quote from DFlow:
+```
+GET /order?
+  userPublicKey={vault_authority_pda}
+  &inputMint={usdc_mint}
+  &outputMint={yes_token_mint}
+  &amount={amount_in_lamports}
+  &slippageBps=100
+```
+
+### 2. DFlow Response
+DFlow returns a response containing:
+- Serialized Solana transaction
+- Route plan (venues, amounts)
+- Expected output amount
+- Price impact
+
+### 3. Fund Program Validation
+Your fund program's `execute_trade` instruction:
+- Validates stage == Trading
+- Validates caller == manager
+- Validates transaction targets whitelisted DFlow program
+- Validates all token accounts belong to vault PDA
+
+### 4. Transaction Execution
+The fund program executes the DFlow swap via CPI:
+- USDC leaves vault → Outcome tokens arrive
+- Or: Outcome tokens leave → USDC arrives
+
+### 5. Confirmation
+- Transaction confirms on-chain
+- Positions updated in vault
+- Trade logged in database
+
+---
+
+## Quote Validity
+
+> **Note**: Quotes have a validity window. If the blockchain slot advances too far, the trade may fail. Simply retry with a fresh quote.
+
+---
+
+## Position Monitoring
+
+Track your positions in the Manager Dashboard:
+
+| Column | Description |
+|--------|-------------|
+| **Market** | Market name/ticker |
+| **Side** | YES or NO |
+| **Quantity** | Tokens held |
+| **Avg Price** | Entry price |
+| **Current** | Current market price |
+| **P&L** | Unrealized profit/loss |
+
+---
+
+## Selling Positions
+
+To exit a position:
+
+1. Navigate to your position in the dashboard
+2. Click **Sell** on the position row
+3. Choose amount (partial or full)
+4. Review quote and confirm
+5. Sign transaction
+
+---
+
+## Settlement & Redemption
+
+When a market resolves:
+- Winning tokens are redeemable for $1.00 each
+- Losing tokens become worthless
+- Use DFlow's redemption flow to convert to USDC
+
+### Before Fund Closes
+**You must close all positions** before calling `finalize_close`:
+- Sell positions that haven't resolved
+- Redeem resolved winning positions
+- Vault must hold only USDC
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Quote expired | Retry with fresh quote |
+| Slippage error | Increase slippage tolerance |
+| Insufficient funds | Check vault USDC balance |
+| Transaction failed | Check transaction logs, retry |
+
+---
+
+## Next Steps
+
+- [Fund Completion Process →](/docs/fund-completion)
+- [Back to Fund Management →](/docs/managing-a-fund)
