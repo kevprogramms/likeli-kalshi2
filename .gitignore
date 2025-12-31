@@ -6,3 +6,18 @@ out/
 .env
 .env.*
 .DS_Store
+
+# Rust/Anchor build artifacts
+target/
+**/target/
+programs/*/target/
+
+# Anchor generated
+.anchor/
+test-ledger/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
