@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User profile for cross-chain identity
+model User {
+  id            Int      @id @default(autoincrement())
+  address       String   @unique // Primary wallet address
+  displayName   String?
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  
+  etfHoldings   EtfHolding[]
+  leaderboard   LeaderboardEntry?
+}
+
+// Links Polygon Vault (LikeliVault.sol) with Solana Fund
+model VaultGroup {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  manager        String   // Manager wallet address
+  
+  polygonVaultId String?  // Checksum address of LikeliVault.sol
+  solanaVaultId  String?  // Pubkey of Anchor FundState
+  
+  createdAt      DateTime @default(now())
+}
+
+// Backend ETF basket (cross-chain portfolio)
+model EtfBasket {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  nav         Float    @default(1)  // Net Asset Value per share
+  totalShares Float    @default(0)
+  cashUsdc    Float    @default(0)  // Idle USDC in basket
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  holdings    EtfHolding[]
+  positions   EtfPosition[]
+}
+
+// Target allocation within an ETF basket
+model EtfPosition {
+  id          Int       @id @default(autoincrement())
+  basketId    String
+  basket      EtfBasket @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  
+  marketId    String    // Polymarket or DFlow market ID
+  marketName  String?
+  chain       String    // 'polygon' | 'solana'
+  side        String    // 'YES' | 'NO'
+  allocation  Float     // Target % (e.g., 0.30 for 30%)
+  shares      Float     @default(0) // Actual shares held
+  
+  @@unique([basketId, marketId, side])
+}
+
+// User's holdings in ETF baskets
+model EtfHolding {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  basketId  String
+  basket    EtfBasket @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  
+  shares    Float     @default(0)
+  
+  @@unique([userId, basketId])
+}
+
+// User leaderboard for gamification
+model LeaderboardEntry {
+  userId      Int      @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  totalPnl    Float    @default(0)
+  totalVolume Float    @default(0)
+  rank        Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+// Trade history for leaderboard calculations
+model Trade {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  
+  marketId  String
+  chain     String   // 'polygon' | 'solana'
+  side      String   // 'YES' | 'NO'
+  amount    Float
+  pnl       Float    @default(0)
+  timestamp DateTime @default(now())
+  
+  @@index([userId])
+}

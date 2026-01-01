@@ -26,7 +26,7 @@ function WalletModal({ isOpen, onClose, onSelect }) {
                     <path d="M34.93 20.66l-7.08-2.07 2.15 3.23-3.23 6.29 4.25-.05h6.35l-2.44-7.4zM12.13 18.59l-7.08 2.07-2.36 7.4h6.32l4.25.05-3.22-6.29 2.09-3.23zM22.41 20.84l.45-7.79 2.05-5.54H15.06l2.03 5.54.46 7.79.17 2.47.02 6.03h4.42l.03-6.03.22-2.47z" fill="#F6851B" stroke="#F6851B" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             ),
-            description: 'Connect using MetaMask browser extension',
+            description: 'Polygon • For Polymarket trading',
             color: '#f6851b'
         },
         {
@@ -46,7 +46,7 @@ function WalletModal({ isOpen, onClose, onSelect }) {
                     </defs>
                 </svg>
             ),
-            description: 'Connect using Phantom wallet',
+            description: 'Solana • For Kalshi trading via DFlow',
             color: '#ab9ff2'
         },
         {

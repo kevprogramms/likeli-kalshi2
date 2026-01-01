@@ -1,21 +1,27 @@
 /**
  * DFlow Prediction Markets API Adapter (Kalshi via DFlow)
  * 
- * Development API Endpoints (proxied via localhost:3001):
- * - Quote API: https://dev-quote-api.dflow.net
- * - Prediction Markets API: https://dev-prediction-markets-api.dflow.net
+ * PRODUCTION API Endpoints (proxied via backend server):
+ * - Quote API: https://b.quote-api.dflow.net
+ * - Markets API: https://a.prediction-markets-api.dflow.net
  * 
- * IMPORTANT: This is for end-to-end trading during development.
- * - Don't release in prod without notifying DFlow
- * - Be willing to lose test capital
+ * All requests are proxied through the backend server which:
+ * - Adds the API key (kept server-side for security)
+ * - Handles CORS issues
+ * - Rate limits requests (100/min)
  */
 
-// Proxy server URL (handles CORS)
+// Proxy server URL (handles CORS and API key injection)
 const PROXY_BASE_URL = 'http://localhost:3001';
 
-// Direct API URLs (for reference - not used directly due to CORS)
-const DFLOW_QUOTE_API_DIRECT = 'https://dev-quote-api.dflow.net';
-const DFLOW_MARKETS_API_DIRECT = 'https://dev-prediction-markets-api.dflow.net';
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
+
+/**
+ * Sleep for a given number of milliseconds
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 class DFlowAPI {
     constructor(apiKey = null) {
@@ -23,7 +29,13 @@ class DFlowAPI {
         this.proxyUrl = PROXY_BASE_URL;
     }
 
-    async fetch(endpoint, options = {}) {
+    /**
+     * Fetch with automatic retry on failure
+     * @param {string} endpoint - API endpoint
+     * @param {object} options - Fetch options
+     * @param {number} retriesLeft - Number of retries remaining
+     */
+    async fetch(endpoint, options = {}, retriesLeft = MAX_RETRIES) {
         const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -35,35 +47,116 @@ class DFlowAPI {
 
         // Use proxy to avoid CORS
         const url = `${this.proxyUrl}/api/dflow${endpoint}`;
-        console.log(`DFlow API: Fetching ${url}`);
+
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: { ...headers, ...options.headers },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.message || errorData.error || `API error: ${response.status}`;
+
+                // Retry on 5xx errors or rate limiting
+                if ((response.status >= 500 || response.status === 429) && retriesLeft > 0) {
+                    const delay = INITIAL_RETRY_DELAY_MS * (MAX_RETRIES - retriesLeft + 1);
+                    console.warn(`[DFlow] Request failed (${response.status}), retrying in ${delay}ms... (${retriesLeft} retries left)`);
+                    await sleep(delay);
+                    return this.fetch(endpoint, options, retriesLeft - 1);
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            return await response.json();
+        } catch (error) {
+            // Network errors - retry if possible
+            if (retriesLeft > 0 && error.name === 'TypeError') {
+                const delay = INITIAL_RETRY_DELAY_MS * (MAX_RETRIES - retriesLeft + 1);
+                console.warn(`[DFlow] Network error, retrying in ${delay}ms... (${retriesLeft} retries left)`);
+                await sleep(delay);
+                return this.fetch(endpoint, options, retriesLeft - 1);
+            }
+            throw error;
+        }
+    }
+
+    // Quote API methods - Get a quote for a trade
+    async requestQuote(params = {}) {
+        // POST to backend proxy which adds the API key header
+        const url = `${this.proxyUrl}/api/dflow/quote`;
+        console.log(`DFlow Quote API: POST ${url}`, params);
 
         const response = await fetch(url, {
-            ...options,
-            headers: { ...headers, ...options.headers },
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(params)
         });
 
         if (!response.ok) {
-            const errorMsg = `DFlow API error: ${response.status} ${response.statusText}`;
-            console.error(errorMsg);
-            throw new Error(errorMsg);
+            const error = await response.json().catch(() => ({ error: response.statusText }));
+            throw new Error(`Quote API error: ${response.status} - ${error.error || error.details || 'Unknown'}`);
         }
-
-        const data = await response.json();
-        console.log(`DFlow API: Success`, data);
-        return data;
-    }
-
-    // Quote API methods
-    async getQuote(params = {}) {
-        const query = new URLSearchParams(params).toString();
-        // Quote API uses different proxy endpoint
-        const url = `${this.proxyUrl}/api/dflow/quote${query ? `?${query}` : ''}`;
-        const response = await fetch(url, {
-            headers: { 'Accept': 'application/json' }
-        });
-        if (!response.ok) throw new Error(`Quote API error: ${response.status}`);
         return response.json();
     }
+
+    // Execute a trade with a signed quote
+    async executeTrade(params = {}) {
+        // POST to backend proxy which adds the API key header
+        const url = `${this.proxyUrl}/api/dflow/execute`;
+        console.log(`DFlow Execute API: POST ${url}`, params);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(params)
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: response.statusText }));
+            throw new Error(`Execute API error: ${response.status} - ${error.error || error.details || 'Unknown'}`);
+        }
+        return response.json();
+    }
+
+    // New Declarative Swap Method
+    // Calls GET /order (proxied) to get a constructed transaction
+    async getDeclarativeOrder(params = {}) {
+        const url = `${this.proxyUrl}/api/dflow/order`;
+        console.log(`DFlow Declarative Order: POST ${url}`, params);
+
+        const response = await fetch(url, {
+            method: 'POST', // Proxy uses POST to accept body params
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(params)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorJson = {};
+            try { errorJson = JSON.parse(errorText); } catch (e) { }
+
+            throw new Error(`Order request failed: ${response.status} - ${errorJson.error || errorJson.details || errorText}`);
+        }
+
+        return response.json();
+    }
+
+    // Legacy getQuote method for backward compatibility
+    async getQuote(params = {}) {
+        return this.requestQuote(params);
+    }
+
 
     // Markets API methods
     async getEvents(params = {}) {
@@ -107,6 +200,31 @@ class DFlowAPI {
 
     async search(query) {
         return this.fetch(`/search?q=${encodeURIComponent(query)}`);
+    }
+
+    /**
+     * Get user positions (mock implementation for now using standard RPC if needed)
+     * For DFlow/Prediction Markets, positions are just SPL tokens held by the user.
+     * We can fetch them via standard Solana RPC if we have the wallet address.
+     */
+    async getUserPositions(walletAddress, events = []) {
+        if (!walletAddress) return [];
+
+        try {
+            // We need a connection to fetch token accounts
+            // Use standard mainnet/devnet endpoint
+            // For now, this is a placeholder or we can implement client-side fetching in the component
+            // because dflow.js is technically just an API wrapper.
+
+            // However, we can help filter:
+            // 1. Fetch all token accounts for wallet (client side)
+            // 2. Map mints to market outcomes using the "events" data
+
+            return []; // Implemented in component for direct RPC access
+        } catch (error) {
+            console.error('Error fetching user positions:', error);
+            return [];
+        }
     }
 
     /**
@@ -202,6 +320,36 @@ class DFlowAPI {
                     noPrice = 1 - yesPrice;
                 }
             }
+            // Parse outcome mints from accounts
+            // "accounts" maps Collateral Mint -> { yesMint, noMint, ... }
+            // We want to find the account for USDC (devnet or mainnet)
+            // or fallback to the first available account
+
+            let usdcAccount = null;
+
+            // Known USDC Mints
+            const USDC_MAINNET = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+            const USDC_DEVNET = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
+
+            if (market.accounts) {
+                if (market.accounts[USDC_MAINNET]) {
+                    usdcAccount = market.accounts[USDC_MAINNET];
+                } else if (market.accounts[USDC_DEVNET]) {
+                    usdcAccount = market.accounts[USDC_DEVNET];
+                } else {
+                    // Fallback: take the first account that isn't CASH if possible, or just the first one
+                    const keys = Object.keys(market.accounts);
+                    const realKey = keys.find(k => !k.includes('CASH'));
+                    usdcAccount = market.accounts[realKey || keys[0]];
+                }
+            }
+
+            const outcomeMints = {
+                curr: usdcAccount ? (market.accounts[USDC_MAINNET] ? USDC_MAINNET : USDC_DEVNET) : null, // Collateral mint
+                yes: usdcAccount?.yesMint || null,
+                no: usdcAccount?.noMint || null
+            };
+
             // Clamp prices to valid range
             yesPrice = Math.max(0.01, Math.min(0.99, yesPrice));
             noPrice = Math.max(0.01, Math.min(0.99, noPrice));
@@ -210,11 +358,15 @@ class DFlowAPI {
             const event = eventMap.get(eventTicker);
             // Build Kalshi URL: https://kalshi.com/markets/{eventTicker}/{marketTicker}
             const kalshiMarketUrl = `https://kalshi.com/markets/${eventTicker.toLowerCase()}/${market.ticker.toLowerCase()}`;
+
             event.markets.push({
                 id: market.ticker,
                 title: market.title,
                 subtitle: market.subtitle || '',
                 kalshiUrl: kalshiMarketUrl,
+                // Critical for trading:
+                outcomeMints: outcomeMints,
+                accounts: market.accounts,
                 outcomes: [
                     {
                         name: market.yesSubTitle || 'Yes',

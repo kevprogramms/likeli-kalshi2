@@ -10,17 +10,19 @@
  */
 
 import { ClobClient, Side, OrderType } from '@polymarket/clob-client';
+import { BuilderConfig } from '@polymarket/builder-signing-sdk';
 import { ethers } from 'ethers';
 
 // API Endpoints
 const GAMMA_API_URL = 'https://gamma-api.polymarket.com';
-const CLOB_HOST = 'http://localhost:3001/api/clob-proxy'; // Local backend proxy
+const CLOB_HOST = 'https://clob.polymarket.com'; // Direct Polymarket CLOB API
+const BUILDER_SIGNING_URL = 'http://localhost:3001/api/polymarket/sign'; // Backend signing endpoint
 const CHAIN_ID = 137; // Polygon Mainnet
 
-// Backend proxy URL (to bypass CORS)
+// Backend URL for data proxy
 const BACKEND_API_URL = 'http://localhost:3001/api/markets/polymarket';
 
-// Builders API Key
+// Builders API Key (for reading markets)
 const BUILDERS_API_KEY = '019b6962-ccdb-72ce-80c6-96171250a5b1';
 
 // ============================================
@@ -414,11 +416,27 @@ class PolymarketTrader {
                 throw new Error('Phantom wallet not detected. Please install Phantom.');
             }
         } else {
-            // MetaMask or other injected wallet
-            if (!window.ethereum) {
+            // Explicitly find MetaMask - it has isMetaMask = true
+            // When both Phantom and MetaMask are installed, window.ethereum might be Phantom
+            if (window.ethereum?.providers) {
+                // Multiple providers detected - find MetaMask specifically
+                provider = window.ethereum.providers.find(p => p.isMetaMask && !p.isPhantom);
+                if (!provider) {
+                    throw new Error('MetaMask not found among wallet providers. Please install MetaMask.');
+                }
+            } else if (window.ethereum?.isMetaMask && !window.ethereum?.isPhantom) {
+                // Single provider that is MetaMask (not Phantom pretending to be MetaMask)
+                provider = window.ethereum;
+            } else if (window.ethereum) {
+                // Fallback - might be Phantom intercepting, warn user
+                console.warn('window.ethereum detected but may not be MetaMask. Checking...');
+                if (window.ethereum.isPhantom) {
+                    throw new Error('Phantom is intercepting MetaMask. Please disable Phantom or use MetaMask browser profile.');
+                }
+                provider = window.ethereum;
+            } else {
                 throw new Error('MetaMask not detected. Please install MetaMask.');
             }
-            provider = window.ethereum;
         }
 
         try {
@@ -498,7 +516,10 @@ class PolymarketTrader {
      * Initialize CLOB client with wallet
      */
     async initialize() {
+        this.emitDebug('Trace', 'Init', 'Starting Initialization...');
+
         if (!this.signer || !this.funder) {
+            this.emitDebug('Trace', 'Init', 'Connecting Wallet...');
             await this.connectWallet();
         }
 
@@ -510,47 +531,71 @@ class PolymarketTrader {
 
             // Derive or derivation of API credentials
             // This triggers the first signature request: "Sign this message to create your Polymarket API key"
-            const tempClient = new ClobClient(CLOB_HOST, CHAIN_ID, this.signer);
-            const creds = await tempClient.createOrDeriveApiKey();
+            console.log('[Polymarket] Creating temp client for key derivation...');
+            this.emitDebug('Trace', 'Init', 'Deriving API Key...');
 
+            // Use proxy URL to bypass CORS - signature is based on request body, not URL
+            const tempClient = new ClobClient(CLOB_HOST, CHAIN_ID, this.signer);
+
+            let creds = null;
+            try {
+                console.log('[Polymarket] Calling createOrDeriveApiKey...');
+
+                // Add execution timeout to prevent eternal hanging
+                const derivationPromise = tempClient.createOrDeriveApiKey();
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Auth Timeout')), 10000)
+                );
+
+                creds = await Promise.race([derivationPromise, timeoutPromise]);
+
+                console.log('[Polymarket] createOrDeriveApiKey returned:', JSON.stringify(creds));
+            } catch (derivationError) {
+                console.warn('[Polymarket] createOrDeriveApiKey failed (will retry on trade):', derivationError.message);
+                // Don't throw - let connection succeed, retry during trade
+            }
+
+            if (creds && creds.secret) {
+                this.creds = creds; // Store for validation
+                console.log('[Polymarket] Valid credentials stored');
+            } else {
+                console.warn('[Polymarket] Credentials empty/invalid - will retry during trade');
+                this.creds = null;
+            }
+
+            // Configure BuilderConfig for remote signing (builder credentials stay on server)
+            const builderConfig = new BuilderConfig({
+                remoteBuilderConfig: {
+                    url: BUILDER_SIGNING_URL
+                }
+            });
+
+            // Use signature type 0 (EOA) for standard browser wallets with builder attribution
             this.client = new ClobClient(
-                CLOB_HOST,
+                CLOB_HOST, // Use proxy to bypass CORS
                 CHAIN_ID,
                 this.signer,
-                creds,
-                0, // Browser wallet signature type
+                creds || undefined,
+                0, // EOA signature type for MetaMask/browser wallets
                 this.funder,
-                headers
+                undefined, // no custom headers
+                false,
+                builderConfig // Builder config for order attribution
             );
 
-            // Check if T&Cs are accepted
-            try {
-                // This is a GET request, shouldn't trigger signature unless needed
-                const isAccepted = await this.client.getIsTNCsAccepted();
-                if (!isAccepted) {
-                    console.log('T&Cs not accepted. Triggering signature request...');
-                    // This triggers a signature request: "I accept the Polymarket Terms of Service"
-                    await this.client.updateIsTNCsAccepted();
-                }
-            } catch (tncErr) {
-                console.warn('T&Cs check failed, attempting to register anyway:', tncErr.message);
-            }
-
-            // Ensure account is registered on the CLOB
-            try {
-                // This triggers a signature request if not registered
-                await this.client.register();
-                console.log('CLOB Registration confirmed');
-            } catch (regErr) {
-                console.log('Registration status:', regErr.message || 'Already registered');
-            }
+            // Note: T&Cs and registration are handled by createOrDeriveApiKey in newer SDK versions
+            // The SDK handles these automatically when deriving API keys
+            console.log('[Polymarket] Skipping legacy T&C/registration checks (handled by SDK)');
 
             this.isInitialized = true;
             console.log('Polymarket CLOB client initialized');
+            this.emitDebug('Trace', 'Init', 'Initialization Complete');
 
             return { success: true, address: this.funder };
         } catch (error) {
-            console.error('CLOB initialization error:', error);
+            console.error('Polymarket initialization error:', error);
+            this.emitDebug('Error', 'Init Failed', error.message);
+            this.isInitialized = false;
             throw error;
         }
     }
@@ -582,6 +627,7 @@ class PolymarketTrader {
      * @returns {number} Balance in USDC (not wei)
      */
     async getUSDCBalance() {
+        this.emitDebug('Trace', 'getUSDCBalance Started', 'Checking wallet balance...');
         console.log('getUSDCBalance called', {
             hasProvider: !!this.provider,
             funder: this.funder,
@@ -590,16 +636,20 @@ class PolymarketTrader {
 
         if (!this.provider || !this.funder) {
             console.error('getUSDCBalance: No provider or funder');
-            return 0; // Return 0 instead of throwing to prevent UI errors
+            this.emitDebug('Trace', 'getUSDCBalance Failed', 'No provider');
+            return 0;
         }
 
         try {
             // Verify network
+            this.emitDebug('Trace', 'Checking Network', 'Getting chain ID...');
             const network = await this.provider.getNetwork();
             console.log('Current network:', network);
+            this.emitDebug('Trace', 'Network Checked', `ChainId: ${network.chainId}`);
 
             if (network.chainId !== 137) {
                 console.warn('Not on Polygon! ChainId:', network.chainId);
+                this.emitDebug('Trace', 'Wrong Network', `ChainId: ${network.chainId}`);
             }
 
             // Bridged USDC.e (used by Polymarket)
@@ -611,6 +661,7 @@ class PolymarketTrader {
             const usdcNative = new ethers.Contract(USDC_NATIVE_ADDRESS, USDC_ABI, this.provider);
 
             console.log('Fetching balances for:', this.funder);
+            this.emitDebug('Trace', 'Fetching Balances', `Address: ${this.funder}`);
 
             const [balanceE, balanceNative] = await Promise.all([
                 usdcE.balanceOf(this.funder).catch((e) => {
@@ -632,6 +683,8 @@ class PolymarketTrader {
                 'Native USDC': balanceNativeFloat,
                 total: balanceEFloat + balanceNativeFloat
             });
+
+            this.emitDebug('Trace', 'getUSDCBalance Done', `Total: $${(balanceEFloat + balanceNativeFloat).toFixed(2)}`);
 
             return balanceEFloat + balanceNativeFloat;
         } catch (error) {
@@ -665,16 +718,22 @@ class PolymarketTrader {
      */
     async checkUSDCAllowance(spender = CTF_EXCHANGE) {
         if (!this.provider || !this.funder) {
-            throw new Error('Wallet not connected');
+            console.warn('checkUSDCAllowance: Wallet not connected');
+            return 0;
         }
 
         try {
+            console.log(`Checking allowance for ${this.funder} -> ${spender}`);
             const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, this.provider);
             const allowance = await usdc.allowance(this.funder, spender);
-            return parseFloat(ethers.utils.formatUnits(allowance, 6));
+            const formatted = parseFloat(ethers.utils.formatUnits(allowance, 6));
+
+            console.log(`Allowance result: ${formatted} USDC`);
+            return formatted;
         } catch (error) {
             console.error('Error checking USDC allowance:', error);
-            throw error;
+            // Don't throw, just return 0 to be safe
+            return 0;
         }
     }
 
@@ -802,6 +861,12 @@ class PolymarketTrader {
                 };
             }
 
+            console.log('checkAllApprovals result:', {
+                usdcAllowance,
+                ctfApproved,
+                negRisk
+            });
+
             return {
                 usdcAllowance,
                 ctfApproved,
@@ -847,119 +912,164 @@ class PolymarketTrader {
      * @param {object} options - Market options (tickSize, negRisk)
      * @param {string} orderType - 'GTC', 'FOK', or 'GTD'
      */
-    async placeOrder(tokenId, side, price, size, options = {}, orderType = 'GTC') {
+    /**
+     * Test wallet connection by forcing a signature
+     */
+    async testWalletConnection() {
+        try {
+            this.emitDebug('Trace', 'Wallet Test', 'Requesting "Test" signature...');
+            const msg = "Verifying Wallet Connection...";
+            const sig = await this.signer.signMessage(msg);
+            this.emitDebug('Trace', 'Wallet Test', 'Signature Received!');
+            console.log('Wallet Test Signature:', sig);
+            return true;
+        } catch (err) {
+            console.error('Wallet Test Failed:', err);
+            this.emitDebug('Error', 'Wallet Test', 'Failed: ' + err.message);
+            return false;
+        }
+    }
+
+    /**
+     * Place an order on the CLOB
+     * Supports both legacy signature (Market object) and new signature (Token ID)
+     */
+    async placeOrder(arg1, arg2, arg3, arg4, arg5, arg6) {
+        this.emitDebug('Trace', 'placeOrder Invoked', 'Checking arguments...');
+
         if (!this.isInitialized) {
+            this.emitDebug('Trace', 'placeOrder', 'Triggering Initialization...');
             await this.initialize();
         }
 
-        if (!tokenId) {
-            throw new Error('Token ID is required for trading');
-        }
-
-        const { tickSize = '0.01', negRisk = false } = options;
-
         try {
-            console.log('Placing order:', { tokenId, side, price, size, orderType });
+            // Determine call signature
+            let tokenId, side, price, size, options, orderType;
 
-            const orderSide = side.toUpperCase() === 'BUY' ? Side.BUY : Side.SELL;
+            if (typeof arg1 === 'string') {
+                // EventDetail Signature: (tokenId, side, price, size, options, orderType)
+                tokenId = arg1;
+                side = arg2;
+                price = arg3;
+                size = arg4;
+                options = arg5 || {};
+                orderType = arg6 || 'FOK';
+                this.emitDebug('Trace', 'Order Mode', 'Low-Level (TokenID)');
+            } else {
+                // Legacy Signature: (market, side, amountUsd, outcomeIndex)
+                const market = arg1;
+                const legacySide = arg2; // 'YES' or 'NO'
+                const amountUsd = arg3;
+                const outcomeIndex = arg4;
 
-            // Map MARKET/LIMIT to CLOB types
-            // For Market orders, we use FOK (Fill-Or-Kill) with slippage
-            let orderTypeEnum = OrderType.GTC;
-            let executionPrice = parseFloat(price);
+                this.emitDebug('Trace', 'Order Mode', 'High-Level (Market Obj)');
 
-            if (orderType === 'MARKET' || orderType === 'FOK') {
-                orderTypeEnum = OrderType.FOK;
-                // Add 1% slippage for Market orders to ensure they fill
-                // Buying: pay slightly more than market price
-                // Selling: accept slightly less than market price
-                const slippage = 1.01;
-                if (orderSide === Side.BUY) {
-                    executionPrice = Math.min(0.99, executionPrice * slippage);
-                } else {
-                    executionPrice = Math.max(0.01, executionPrice / slippage);
-                }
-
-                // Round to tick size
-                const decimals = (tickSize.split('.')[1] || '').length;
-                executionPrice = parseFloat(executionPrice.toFixed(decimals));
-
-                console.log(`Market order slippage applied: ${price} -> ${executionPrice}`);
-            } else if (orderType === 'GTD') {
-                orderTypeEnum = OrderType.GTD;
+                side = 'BUY'; // Always buying
+                price = legacySide === 'YES'
+                    ? Number(market.outcomePrices[outcomeIndex])
+                    : Number(market.outcomePrices[1 - outcomeIndex]);
+                price = Math.max(0.01, Math.min(0.99, price));
+                size = Number(amountUsd) / price;
+                tokenId = market.clobTokenIds[outcomeIndex];
+                options = {
+                    tickSize: market.minimumTick || 0.01,
+                    negRisk: market.negRisk || false
+                };
+                orderType = 'FOK';
             }
 
-            const nextSize = parseFloat(size);
+            this.emitDebug('Trace', 'placeOrder Prep', `Token: ${tokenId?.slice(0, 10)}..., Price: ${price}, Size: ${size}`);
 
-            const result = await this.client.createAndPostOrder(
-                {
-                    tokenID: tokenId,
-                    price: executionPrice,
-                    side: orderSide,
-                    size: nextSize,
-                },
-                { tickSize, negRisk },
-                orderTypeEnum
-            );
+            if (!tokenId) throw new Error('Token ID is required for trading');
+            if (!this.client) throw new Error('Polymarket client not initialized');
 
-            console.log('Order result (full):', JSON.stringify(result, null, 2));
+            // Force L2 credentials if missing
+            if (!this.creds) {
+                console.log('Refreshing API Keys...');
+                this.emitDebug('Trace', 'Auth', 'Deriving API Keys...');
 
-            // If the result contains an error field instead of throwing
-            if (result && (result.error || result.errorMessage || result.error_message)) {
-                return {
-                    success: false,
-                    error: result.error || result.errorMessage || result.error_message
-                };
-            }
+                // Use tempClient for clean derivation (like in initialize)
+                try {
+                    console.log('Creating temp client for derivation in placeOrder...');
+                    const tempClient = new ClobClient(CLOB_HOST, CHAIN_ID, this.signer);
 
-            // Extract order ID from various possible response formats
-            const orderId = result.orderID
-                || result.order_id
-                || result.id
-                || result.orderId
-                || result.data?.orderID
-                || result.data?.id
-                || result.order?.id
-                || result.order?.orderID
-                || (typeof result === 'string' && result.length > 20 ? result : null);
+                    const derivationPromise = tempClient.createOrDeriveApiKey();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('AUTH_TIMEOUT')), 30000)
+                    );
 
-            if (!orderId) {
-                // If the order was a Market/FOK order and not filled, it might return empty/null
-                if (orderTypeEnum === OrderType.FOK) {
-                    return {
-                        success: false,
-                        error: 'Market order could not be filled at current price. Increase slippage or try a Limit order.'
-                    };
+                    this.creds = await Promise.race([derivationPromise, timeoutPromise]);
+                    console.log('Derived creds successfully:', this.creds ? 'Yes' : 'No');
+                } catch (err) {
+                    console.error('Key derivation failed:', err);
+                    this.emitDebug('Error', 'Auth', 'Key derivation failed: ' + err.message);
+
+                    // Provide clearer error messages based on failure type
+                    if (err.message === 'AUTH_TIMEOUT' || err.message.includes('Timeout')) {
+                        throw new Error('Authentication timeout. This may be due to geographic restrictions on Polymarket. Try using a VPN or check if Polymarket is available in your region.');
+                    } else if (err.message.includes('rejected') || err.message.includes('denied')) {
+                        throw new Error('Wallet signature rejected. Please approve the signature request to continue.');
+                    } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+                        throw new Error('Access denied by Polymarket. Your region may be restricted from trading.');
+                    } else {
+                        throw new Error(`Authentication failed: ${err.message}`);
+                    }
                 }
 
-                console.warn('No order ID found in success response.');
-                const fallbackId = 'pending-' + Date.now();
-                return {
-                    success: true,
-                    orderId: fallbackId,
-                    status: 'pending-verification',
-                    raw: result
-                };
+                // Re-initialize logic
+                this.client = new ClobClient(
+                    CLOB_HOST,
+                    CHAIN_ID,
+                    this.signer,
+                    this.creds,
+                    0,
+                    this.funder,
+                    { 'x-api-key': BUILDERS_API_KEY }
+                );
+                this.emitDebug('Trace', 'Auth', 'Client Re-initialized');
+            }
+
+            this.emitDebug('Trace', 'Signing Order', 'Waiting for wallet...');
+
+            // Map Order Type
+            let orderTypeEnum = OrderType.GTC; // Default
+            if (orderType === 'FOK') orderTypeEnum = OrderType.FOK;
+            if (orderType === 'GTD') orderTypeEnum = OrderType.GTD;
+
+            // Call SDK
+            const resp = await this.client.createAndPostOrder({
+                tokenID: tokenId,
+                price: Number(price),
+                side: side === 'BUY' ? Side.BUY : Side.SELL,
+                size: Number(size),
+                feeRateBps: 0,
+                nonce: 0
+            }, options, orderTypeEnum);
+
+            this.emitDebug('Trace', 'Order Placed!', `ID: ${resp.orderID || resp.order_id || 'N/A'}`);
+
+            // Normalize Response
+            const orderId = resp.orderID || resp.order_id || resp.id;
+            if (!orderId && orderTypeEnum === OrderType.FOK && !resp.error) {
+                console.warn('FOK Order returned no ID:', resp);
             }
 
             return {
                 success: true,
-                orderId,
-                status: result.status || result.data?.status || 'submitted',
-                raw: result,
-                ...result
+                orderId: orderId || 'unknown',
+                ...resp
             };
         } catch (error) {
-            console.error('Order placement error details:', error);
-            let errorMessage = error.message || 'Failed to place order';
-            if (error.response && error.response.data) {
-                const data = error.response.data;
-                errorMessage = data.error || data.message || errorMessage;
-            }
+            this.emitDebug('Error', 'placeOrder Failed', error.message);
+            console.error('Polymarket Order Error:', error);
+
+            // Extract meaningful error
+            let msg = error.message;
+            if (error.response?.data?.error) msg = error.response.data.error;
 
             return {
                 success: false,
-                error: errorMessage
+                error: msg
             };
         }
     }
@@ -1041,6 +1151,14 @@ class PolymarketTrader {
         this.funder = null;
         this.isInitialized = false;
         this.provider = null;
+    }
+
+    emitDebug(type, method, url) {
+        try {
+            window.dispatchEvent(new CustomEvent('RELAYER_DEBUG', {
+                detail: { type, method, url, status: 'Trace' }
+            }));
+        } catch (e) { }
     }
 }
 

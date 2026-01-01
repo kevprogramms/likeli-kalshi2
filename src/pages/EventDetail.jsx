@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { marketService } from '../lib/marketService'
 import { useLiveEvent, formatLastUpdated } from '../lib/useLiveMarkets'
 import { useDemo } from '../lib/DemoContext'
-import { getYesPrice, getNoPrice, resetMarket, executeBuy } from '../lib/amm'
+import { useWallet } from '../lib/WalletContext'
+// import { getYesPrice, getNoPrice, resetMarket, executeBuy } from '../lib/amm'
 import { polymarketTrader } from '../lib/polymarket'
+import { dflowAPI } from '../lib/dflow'
+import { VersionedTransaction, Connection } from '@solana/web3.js' // Direct import
 import TradeModal from '../components/TradeModal'
 import WalletModal from '../components/WalletModal'
 import './EventDetail.css'
@@ -13,6 +16,15 @@ function EventDetail() {
     const { id } = useParams()
     const [searchParams] = useSearchParams()
     const { userVaults, executeTrade, walletBalance, setWalletBalance, STAGE } = useDemo()
+
+    // Wallet context for unified wallet management
+    const {
+        phantomConnected,
+        metamaskConnected,
+        getWalletForSource,
+        connectPhantom,
+        connectMetamask
+    } = useWallet()
 
     // Live event data with auto-polling (5 second intervals for trading)
     const {
@@ -35,7 +47,7 @@ function EventDetail() {
     const [tradeMode, setTradeMode] = useState('individual') // 'individual' or 'vault'
     const [showTradeModal, setShowTradeModal] = useState(false)
     const [tradeSuccess, setTradeSuccess] = useState('')
-    const [chartView, setChartView] = useState('Both')
+    const [chartView, setChartView] = useState('YES') // Changed from 'Both' to 'YES'
     const [timeFilter, setTimeFilter] = useState('1D')
     const [userPositions, setUserPositions] = useState([]) // Track individual positions
 
@@ -48,12 +60,42 @@ function EventDetail() {
     const [orderType, setOrderType] = useState('MARKET') // 'MARKET' or 'LIMIT'
     const [customPrice, setCustomPrice] = useState('')
 
+    // DFlow/Kalshi slippage setting (in basis points)
+    const [slippageBps, setSlippageBps] = useState(100) // Default 1% (100 bps)
+    const SLIPPAGE_OPTIONS = [
+        { label: '0.5%', value: 50 },
+        { label: '1%', value: 100 },
+        { label: '2%', value: 200 },
+        { label: '5%', value: 500 },
+    ]
+
+    // Order confirmation dialog
+    const [showDFlowConfirmation, setShowDFlowConfirmation] = useState(false)
+    const [pendingDFlowOrder, setPendingDFlowOrder] = useState(null)
+
+    // Minimum trade amount (USD)
+    const MIN_TRADE_AMOUNT = 1
+
     // Approval state
     const [usdcApproved, setUsdcApproved] = useState(false)
     const [ctfApproved, setCtfApproved] = useState(false)
     const [checkingApprovals, setCheckingApprovals] = useState(false)
     const [approvingUsdc, setApprovingUsdc] = useState(false)
     const [approvingCtf, setApprovingCtf] = useState(false)
+
+    // Sticky approval state
+    const manualUsdcApproval = useRef(false)
+    const manualCtfApproval = useRef(false)
+
+    // DEBUG LOGGING STATE
+    const [debugLogs, setDebugLogs] = useState([])
+    useEffect(() => {
+        const handleDebug = (e) => {
+            setDebugLogs(prev => [e.detail, ...prev].slice(0, 10))
+        }
+        window.addEventListener('RELAYER_DEBUG', handleDebug)
+        return () => window.removeEventListener('RELAYER_DEBUG', handleDebug)
+    }, [])
 
     const tradingVaults = userVaults.filter(v => v.stage === STAGE?.TRADING || v.stage === 'Trading')
 
@@ -130,8 +172,27 @@ function EventDetail() {
             // Calculate size based on USDC amount and price
             const size = usdcAmount / price
 
-            // Place real order on Polymarket CLOB
+            // Define order type string early for logging
             const orderTypeStr = orderType === 'LIMIT' ? 'GTC' : 'FOK' // FOK = Fill-Or-Kill for market orders
+
+            console.log('EventDetail: Placing order:', {
+                tokenId,
+                side: 'BUY',
+                price,
+                size,
+                tickSize: currentMarket?.tickSize,
+                negRisk: currentMarket?.negRisk,
+                orderTypeStr
+            });
+
+            if (!tokenId) {
+                console.error('EventDetail: Token ID is missing!');
+                setTradeSuccess('❌ Error: Token ID missing for this market.');
+                setTrading(false);
+                return;
+            }
+
+            // Place real order on Polymarket CLOB
             const result = await polymarketTrader.placeOrder(
                 tokenId,
                 'BUY',
@@ -161,18 +222,193 @@ function EventDetail() {
         }
     }
 
+    // Handle DFlow/Kalshi trade - Initial validation and confirmation
+    const handleDFlowTrade = async () => {
+        const marketId = currentMarket?.id || id
+        const sideIndex = side === 'YES' ? 0 : 1
+        const marketPrice = outcomes[sideIndex]?.price || 0.5
+
+        // Validate minimum trade amount
+        if (usdcAmount < MIN_TRADE_AMOUNT) {
+            setTradeSuccess(`❌ Minimum trade amount is $${MIN_TRADE_AMOUNT}`)
+            setTimeout(() => setTradeSuccess(''), 4000)
+            return
+        }
+
+        // Check Phantom connection first
+        if (!window.solana || !window.solana.isPhantom) {
+            setTradeSuccess('❌ Phantom wallet not found. Install from phantom.app')
+            setTimeout(() => setTradeSuccess(''), 4000)
+            return
+        }
+
+        // Connect if not connected
+        if (!window.solana.isConnected) {
+            try {
+                await window.solana.connect()
+            } catch (err) {
+                setTradeSuccess('❌ Failed to connect wallet. Please try again.')
+                setTimeout(() => setTradeSuccess(''), 4000)
+                return
+            }
+        }
+
+        const walletAddress = window.solana.publicKey.toString()
+
+        // Prepare order for confirmation
+        const mints = currentMarket?.outcomeMints
+        if (!mints || !mints.curr) {
+            setTradeSuccess('❌ Market data not available. Try refreshing.')
+            setTimeout(() => setTradeSuccess(''), 4000)
+            return
+        }
+
+        const targetOutcomeMint = side === 'YES' ? mints.yes : mints.no
+        const isBuy = direction === 'BUY'
+        const amountAtomic = Math.floor(usdcAmount * 1_000_000).toString()
+
+        // Store pending order and show confirmation
+        setPendingDFlowOrder({
+            marketId,
+            side,
+            direction,
+            usdcAmount,
+            marketPrice,
+            slippageBps,
+            walletAddress,
+            mints,
+            targetOutcomeMint,
+            isBuy,
+            amountAtomic
+        })
+        setShowDFlowConfirmation(true)
+    }
+
+    // Execute confirmed DFlow trade
+    const executeDFlowTrade = async () => {
+        if (!pendingDFlowOrder) return
+
+        setShowDFlowConfirmation(false)
+        setTrading(true)
+        setTradeSuccess('Getting Order from DFlow...')
+
+        const { walletAddress, mints, targetOutcomeMint, isBuy, amountAtomic, slippageBps: orderSlippage } = pendingDFlowOrder
+
+        try {
+            console.log(`[DFlow Trade] Wallet: ${walletAddress}`)
+
+            const USDC_MINT = mints.curr
+
+            const orderParams = {
+                inputMint: isBuy ? USDC_MINT : targetOutcomeMint,
+                outputMint: isBuy ? targetOutcomeMint : USDC_MINT,
+                amount: amountAtomic,
+                slippageBps: orderSlippage, // Use selected slippage
+                userPublicKey: walletAddress
+            };
+
+            console.log('[DFlow Order] Params:', orderParams);
+
+            // 1. Get Constructed Transaction from DFlow (Declarative Swap)
+            const orderData = await dflowAPI.getDeclarativeOrder(orderParams);
+
+            if (!orderData || !orderData.transaction) {
+                throw new Error('No transaction returned from DFlow');
+            }
+
+            console.log('[DFlow Order] Transaction received');
+            setTradeSuccess('Signing transaction in Phantom...');
+
+            // 2. Deserialize Transaction
+            const transactionBuffer = Buffer.from(orderData.transaction, "base64");
+            const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+            // 3. Sign & Send Transaction via Phantom (uses Phantom's RPC, avoids 403)
+            // Phantom supports versioned transactions via signAndSendTransaction
+            console.log('[DFlow Trade] Signing and Sending via Phantom...');
+            const { signature } = await window.solana.signAndSendTransaction(transaction, {
+                skipPreflight: false
+            });
+
+            console.log('[DFlow Trade] Signature:', signature);
+
+            // Success! Phantom already confirmed the transaction was sent
+            // We trust Phantom's signAndSendTransaction response
+            setTradeSuccess(`✅ Trade Submitted! Tx: ${signature.slice(0, 8)}...`);
+
+            // Background check for on-chain confirmation (after 5 seconds)
+            const confirmCheckTimeout = setTimeout(async () => {
+                try {
+                    const isMainnet = mints.curr === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+                    const rpcUrl = isMainnet
+                        ? 'https://api.mainnet-beta.solana.com'
+                        : 'https://api.devnet.solana.com';
+                    const connection = new Connection(rpcUrl, 'confirmed');
+
+                    const status = await connection.getSignatureStatus(signature);
+                    const confStatus = status?.value?.confirmationStatus;
+
+                    if (confStatus === 'confirmed' || confStatus === 'finalized') {
+                        setTradeSuccess(`✅ Trade Confirmed! Tx: ${signature.slice(0, 8)}...`);
+                        // Keep confirmed message visible for 5 more seconds
+                        setTimeout(() => setTradeSuccess(''), 5000);
+                    } else {
+                        // If not confirmed yet, show pending status
+                        setTradeSuccess(`⏳ Confirming on-chain... Tx: ${signature.slice(0, 8)}...`);
+                        setTimeout(() => setTradeSuccess(''), 8000);
+                    }
+                } catch (e) {
+                    // On error, just clear the message (trade was still sent)
+                    console.log('[DFlow] Confirmation check error:', e);
+                    setTradeSuccess(`✅ Trade Sent! Check Solana Explorer for confirmation.`);
+                    setTimeout(() => setTradeSuccess(''), 5000);
+                }
+            }, 5000); // Check after 5 seconds to give chain time
+
+        } catch (err) {
+            console.error('[DFlow Trade] Error:', err)
+            // Only show error if it's actually a failure (not just confirmation timeout)
+            const errorMsg = err.message || 'Unknown error';
+            if (errorMsg.includes('User rejected') || errorMsg.includes('cancelled')) {
+                setTradeSuccess(`⚠️ Trade cancelled by user`);
+            } else {
+                setTradeSuccess(`❌ Trade failed: ${errorMsg}`);
+            }
+            setTimeout(() => setTradeSuccess(''), 5000)
+        } finally {
+            setTrading(false)
+            setPendingDFlowOrder(null)
+        }
+    }
+
     // Handle wallet selection from modal
     const handleWalletSelect = async (walletType) => {
         try {
             const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'phantom' ? 'Phantom' : 'wallet'
             setTradeSuccess(`Connecting ${walletName}...`)
 
-            if (walletType === 'metamask' || walletType === 'phantom') {
-                // Pass walletType so correct provider is used
-                await polymarketTrader.connectWallet(walletType)
+            if (walletType === 'metamask') {
+                // MetaMask → Polygon for Polymarket trading
+                await polymarketTrader.connectWallet('metamask')
                 await polymarketTrader.initialize()
                 setWalletConnected(true)
-                setTradeSuccess(`✅ ${walletName} connected! Ready to trade.`)
+                setTradeSuccess(`✅ ${walletName} connected to Polygon! Ready to trade Polymarket.`)
+                setTimeout(() => setTradeSuccess(''), 3000)
+            } else if (walletType === 'phantom') {
+                // Phantom → Solana for DFlow/Kalshi trading
+                if (!window.solana || !window.solana.isPhantom) {
+                    setTradeSuccess('❌ Phantom not found. Install from phantom.app')
+                    setTimeout(() => setTradeSuccess(''), 4000)
+                    throw new Error('Phantom wallet not detected')
+                }
+
+                // Connect to Solana (not Polygon!)
+                const resp = await window.solana.connect()
+                const solanaAddress = resp.publicKey.toString()
+                console.log(`[Phantom] Connected to Solana: ${solanaAddress}`)
+
+                setWalletConnected(true)
+                setTradeSuccess(`✅ Phantom connected to Solana! Ready to trade Kalshi.`)
                 setTimeout(() => setTradeSuccess(''), 3000)
             } else if (walletType === 'walletconnect') {
                 // WalletConnect - not implemented yet
@@ -196,17 +432,87 @@ function EventDetail() {
             if (connected) {
                 await checkApprovalStatus();
             }
+
+            // Also check Solana wallet connection for DFlow
+            if (window.solana && window.solana.isConnected) {
+                fetchSolanaPositions();
+            }
         };
         checkWalletAndApprovals();
-    }, [])
+    }, [currentMarket]) // Re-run when market changes
+
+    // Fetch Solana positions for DFlow markets
+    const fetchSolanaPositions = async () => {
+        if (!window.solana || !window.solana.publicKey || !currentMarket?.outcomeMints) return;
+
+        try {
+            const userKey = window.solana.publicKey.toString();
+            // Determine RPC based on checks
+            const isMainnet = currentMarket.outcomeMints.curr === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+            const rpcUrl = isMainnet
+                ? 'https://api.mainnet-beta.solana.com'
+                : 'https://api.devnet.solana.com';
+
+            // Direct fetch to avoid importing Connection which might be heavy or not tree-shaken
+            // Or just use the imported Connection class
+            const connection = new Connection(rpcUrl, 'confirmed');
+
+            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+                window.solana.publicKey,
+                { programId: new window.solana.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') } // standard SPL token program
+            );
+
+            // Map token accounts to outcomes
+            const positions = [];
+            const { yes, no } = currentMarket.outcomeMints;
+
+            for (const { account } of tokenAccounts.value) {
+                const mint = account.data.parsed.info.mint;
+                const amount = account.data.parsed.info.tokenAmount.uiAmount;
+
+                if (amount > 0) {
+                    if (mint === yes) {
+                        positions.push({ side: 'YES', amount, mint });
+                    } else if (mint === no) {
+                        positions.push({ side: 'NO', amount, mint });
+                    }
+                }
+            }
+
+            if (positions.length > 0) {
+                console.log('Found user positions:', positions);
+                setUserPositions(positions);
+            }
+
+        } catch (e) {
+            console.error('Error fetching Solana positions:', e);
+        }
+    }
 
     // Check approval status
     const checkApprovalStatus = async () => {
+        // Don't overwrite if we are currently currently approving to avoid race conditions
+        if (approvingUsdc || approvingCtf) return;
+
         setCheckingApprovals(true);
         try {
             const approvals = await polymarketTrader.checkAllApprovals(currentMarket?.negRisk || false);
-            setUsdcApproved(approvals.usdcApproved || false);
-            setCtfApproved(approvals.ctfApproved || false);
+
+            // USDC Sticky Logic
+            if (approvals.usdcApproved) {
+                setUsdcApproved(true);
+                manualUsdcApproval.current = true;
+            } else if (!manualUsdcApproval.current) {
+                setUsdcApproved(false);
+            }
+
+            // CTF Sticky Logic
+            if (approvals.ctfApproved) {
+                setCtfApproved(true);
+                manualCtfApproval.current = true;
+            } else if (!manualCtfApproval.current) {
+                setCtfApproved(false);
+            }
         } catch (error) {
             console.error('Failed to check approvals:', error);
         } finally {
@@ -215,14 +521,39 @@ function EventDetail() {
     };
 
     // Handle USDC approval
+    // Handle USDC approval
     const handleApproveUSDC = async () => {
         setApprovingUsdc(true);
-        setTradeSuccess('Approving USDC...');
+        setTradeSuccess('Approving USDC... Check your wallet');
         try {
-            await polymarketTrader.approveUSDC();
-            setUsdcApproved(true);
-            setTradeSuccess('✅ USDC approved!');
-            setTimeout(() => setTradeSuccess(''), 3000);
+            // 1. Send tx
+            const result = await polymarketTrader.approveUSDC();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Approval failed');
+            }
+
+            setTradeSuccess('Waitng for confirmation...');
+
+            // 2. Wait and Verify
+            // Small delay to let node index
+            await new Promise(r => setTimeout(r, 2000));
+
+            const allowance = await polymarketTrader.checkUSDCAllowance();
+            console.log('Post-approval allowance:', allowance);
+
+            if (allowance > 0) {
+                setUsdcApproved(true);
+                manualUsdcApproval.current = true; // Sticky!
+                setTradeSuccess('✅ USDC approved!');
+                setTimeout(() => setTradeSuccess(''), 3000);
+            } else {
+                setTradeSuccess('⚠️ Approval tx sent but allowance check failed. Trusting tx...');
+                // Optimistically approve to verify flow
+                setUsdcApproved(true);
+                manualUsdcApproval.current = true; // Force sticky
+            }
+
         } catch (error) {
             console.error('USDC approval error:', error);
             setTradeSuccess(`❌ Approval failed: ${error.message}`);
@@ -392,7 +723,7 @@ function EventDetail() {
                 {/* Chart Controls */}
                 <div className="poly-chart-controls">
                     <div className="poly-toggles">
-                        {['Market', 'BTC', 'Both'].map(v => (
+                        {['YES', 'NO', 'Both'].map(v => (
                             <button key={v} className={chartView === v ? 'active' : ''} onClick={() => setChartView(v)}>
                                 {v}
                             </button>
@@ -407,45 +738,136 @@ function EventDetail() {
                     </div>
                 </div>
 
-                {/* Chart Area */}
-                <div className="poly-chart">
-                    <div className="poly-y-left">
-                        <span>100¢</span>
-                        <span>{yesCents}¢</span>
-                        <span>0¢</span>
+                {/* Chart Area - YES/NO Price Lines */}
+                <div className="poly-chart" style={{ display: 'flex', position: 'relative' }}>
+                    {/* Y-Axis Labels */}
+                    <div className="poly-y-left" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '10px 8px', fontSize: '11px', color: '#888' }}>
+                        <span>100%</span>
+                        <span>50%</span>
+                        <span>0%</span>
                     </div>
 
-                    <div className="poly-chart-area">
-                        <svg viewBox="0 0 1000 200" preserveAspectRatio="none">
-                            <path
-                                d={`M0,${200 - yesPrice * 200} C50,${200 - yesPrice * 180} 100,${200 - yesPrice * 220} 200,${200 - yesPrice * 190} C300,${200 - yesPrice * 160} 400,${200 - yesPrice * 200} 500,${200 - yesPrice * 180} C600,${200 - yesPrice * 150} 700,${200 - yesPrice * 170} 800,${200 - yesPrice * 140} C900,${200 - yesPrice * 120} 950,${200 - yesPrice * 140} 1000,${200 - yesPrice * 130}`}
-                                fill="none"
-                                stroke="#E63946"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                            {(chartView === 'Both' || chartView === 'BTC') && (
-                                <path
-                                    d="M0,120 C50,125 80,115 120,130 C160,145 200,120 250,115 C300,110 350,130 400,125 C450,120 500,90 550,100 C600,110 650,80 700,90 C750,100 800,60 850,70 C900,80 950,55 1000,60"
-                                    fill="none"
-                                    stroke="#00D4FF"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
+                    {/* Chart Area */}
+                    <div className="poly-chart-area" style={{ flex: 1, position: 'relative', height: '200px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', overflow: 'hidden' }}>
+                        {/* Grid lines */}
+                        <div style={{ position: 'absolute', top: '25%', left: 0, right: 0, borderTop: '1px dashed rgba(255,255,255,0.05)' }} />
+                        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px dashed rgba(255,255,255,0.1)' }} />
+                        <div style={{ position: 'absolute', top: '75%', left: 0, right: 0, borderTop: '1px dashed rgba(255,255,255,0.05)' }} />
+
+                        {/* "Now" indicator line at 80% */}
+                        <div style={{
+                            position: 'absolute',
+                            left: '80%',
+                            top: 0,
+                            bottom: 0,
+                            borderLeft: '1px dashed rgba(255,255,255,0.15)',
+                            zIndex: 1
+                        }} />
+                        <span style={{
+                            position: 'absolute',
+                            left: '80%',
+                            bottom: '5px',
+                            transform: 'translateX(-50%)',
+                            fontSize: '9px',
+                            color: '#666'
+                        }}>NOW</span>
+
+                        {/* YES Price Line (Green) - ends at 80% with live dot */}
+                        {(chartView === 'YES' || chartView === 'Both') && (
+                            <>
+                                {/* Trailing line */}
+                                <div style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    width: '80%',
+                                    top: `${(1 - yesPrice) * 100}%`,
+                                    height: '2px',
+                                    background: 'linear-gradient(90deg, rgba(16,185,129,0.2) 0%, #10b981 100%)',
+                                    transition: 'top 0.3s ease'
+                                }} />
+                                {/* Live price dot */}
+                                <div style={{
+                                    position: 'absolute',
+                                    left: '80%',
+                                    top: `${(1 - yesPrice) * 100}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                    width: '12px',
+                                    height: '12px',
+                                    background: '#10b981',
+                                    borderRadius: '50%',
+                                    boxShadow: '0 0 15px rgba(16, 185, 129, 0.8)',
+                                    transition: 'top 0.3s ease',
+                                    zIndex: 2
+                                }} />
+                                {/* Price label */}
+                                <div style={{
+                                    position: 'absolute',
+                                    left: 'calc(80% + 20px)',
+                                    top: `${(1 - yesPrice) * 100}%`,
+                                    transform: 'translateY(-50%)',
+                                    fontSize: '11px',
+                                    color: '#10b981',
+                                    fontWeight: 'bold',
+                                    transition: 'top 0.3s ease'
+                                }}>{(yesPrice * 100).toFixed(1)}%</div>
+                            </>
+                        )}
+
+                        {/* NO Price Line (Red) - ends at 80% with live dot */}
+                        {(chartView === 'NO' || chartView === 'Both') && (
+                            <>
+                                {/* Trailing line */}
+                                <div style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    width: '80%',
+                                    top: `${(1 - noPrice) * 100}%`,
+                                    height: '2px',
+                                    background: 'linear-gradient(90deg, rgba(239,68,68,0.2) 0%, #ef4444 100%)',
+                                    transition: 'top 0.3s ease'
+                                }} />
+                                {/* Live price dot */}
+                                <div style={{
+                                    position: 'absolute',
+                                    left: '80%',
+                                    top: `${(1 - noPrice) * 100}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                    width: '12px',
+                                    height: '12px',
+                                    background: '#ef4444',
+                                    borderRadius: '50%',
+                                    boxShadow: '0 0 15px rgba(239, 68, 68, 0.8)',
+                                    transition: 'top 0.3s ease',
+                                    zIndex: 2
+                                }} />
+                                {/* Price label */}
+                                <div style={{
+                                    position: 'absolute',
+                                    left: 'calc(80% + 20px)',
+                                    top: `${(1 - noPrice) * 100}%`,
+                                    transform: 'translateY(-50%)',
+                                    fontSize: '11px',
+                                    color: '#ef4444',
+                                    fontWeight: 'bold',
+                                    transition: 'top 0.3s ease'
+                                }}>{(noPrice * 100).toFixed(1)}%</div>
+                            </>
+                        )}
+
+                        {/* Legend */}
+                        <div className="poly-legend" style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '15px', fontSize: '12px' }}>
+                            {(chartView === 'YES' || chartView === 'Both') && (
+                                <span style={{ color: '#10b981' }}>● YES</span>
                             )}
-                        </svg>
-                        <div className="poly-legend">
-                            <span className="legend-red">— Market</span>
-                            {(chartView === 'Both' || chartView === 'BTC') && <span className="legend-blue">— BTC</span>}
+                            {(chartView === 'NO' || chartView === 'Both') && (
+                                <span style={{ color: '#ef4444' }}>● NO</span>
+                            )}
                         </div>
-                    </div>
 
-                    <div className="poly-y-right">
-                        <span>$85,437</span>
-                        <span>$85,360</span>
-                        <span>$85,156</span>
+                        {/* Timeframe note */}
+                        <div style={{ position: 'absolute', bottom: '5px', left: '10px', fontSize: '9px', color: '#555' }}>
+                            📊 Live price • Historical data coming soon
+                        </div>
                     </div>
                 </div>
 
@@ -466,6 +888,21 @@ function EventDetail() {
                         </button>
                         <div className="poly-levels">● 78 levels</div>
                     </div>
+
+                    {/* User Positions Display */}
+                    {userPositions.length > 0 && (
+                        <div className="user-positions" style={{ padding: '10px', background: '#2C3E50', borderRadius: '8px', marginBottom: '10px' }}>
+                            <div style={{ fontSize: '12px', color: '#BDC3C7', marginBottom: '5px' }}>YOUR POSITIONS</div>
+                            {userPositions.map((pos, idx) => (
+                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', color: '#ECF0F1', fontWeight: 'bold' }}>
+                                    <span style={{ color: pos.side === 'YES' ? '#00b894' : '#e17055' }}>
+                                        {pos.side}
+                                    </span>
+                                    <span>{pos.amount} shares</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Order Type Toggle */}
                     <div className="poly-order-type-toggle">
@@ -580,37 +1017,83 @@ function EventDetail() {
                             </select>
                         )}
 
-                        {!walletConnected ? (
-                            <button
-                                className="poly-execute connect-wallet"
-                                onClick={() => setShowWalletModal(true)}
-                            >
-                                Connect Wallet
-                            </button>
-                        ) : !usdcApproved ? (
-                            <button
-                                className="poly-execute approve-usdc"
-                                disabled={approvingUsdc || checkingApprovals}
-                                onClick={handleApproveUSDC}
-                            >
-                                {approvingUsdc ? 'Approving USDC...' : checkingApprovals ? 'Checking...' : '✓ Approve USDC'}
-                            </button>
-                        ) : direction === 'SELL' && !ctfApproved ? (
-                            <button
-                                className="poly-execute approve-ctf"
-                                disabled={approvingCtf || checkingApprovals}
-                                onClick={handleApproveCTF}
-                            >
-                                {approvingCtf ? 'Approving CTF...' : checkingApprovals ? 'Checking...' : '✓ Approve CTF'}
-                            </button>
+                        {/* DFlow/Kalshi markets - Require Phantom */}
+                        {(event?.source === 'dflow' || event?.source === 'kalshi') ? (
+                            !phantomConnected ? (
+                                <button
+                                    className="poly-execute connect-wallet phantom"
+                                    onClick={connectPhantom}
+                                    style={{ background: 'linear-gradient(135deg, #ab9ff2 0%, #7b68ee 100%)' }}
+                                >
+                                    👻 Connect Phantom to Trade
+                                </button>
+                            ) : (
+                                /* Phantom connected - show slippage selector + trade button */
+                                <>
+                                    <div className="slippage-selector" style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '12px', color: '#888' }}>Slippage:</span>
+                                        {SLIPPAGE_OPTIONS.map(opt => (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => setSlippageBps(opt.value)}
+                                                style={{
+                                                    padding: '4px 8px',
+                                                    fontSize: '11px',
+                                                    border: slippageBps === opt.value ? '2px solid #10b981' : '1px solid #333',
+                                                    background: slippageBps === opt.value ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    color: slippageBps === opt.value ? '#10b981' : '#888'
+                                                }}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        className={`poly-execute ${side === 'YES' ? 'yes' : 'no'}`}
+                                        disabled={trading}
+                                        onClick={handleDFlowTrade}
+                                    >
+                                        {trading ? 'Trading via DFlow...' : `${direction} ${side} on Kalshi`}
+                                    </button>
+                                </>
+                            )
                         ) : (
-                            <button
-                                className={`poly-execute ${side === 'YES' ? 'yes' : 'no'}`}
-                                disabled={trading}
-                                onClick={handleTrade}
-                            >
-                                {trading ? 'Placing Order...' : `${direction} ${side}`}
-                            </button>
+                            /* Polymarket markets - Require MetaMask */
+                            !metamaskConnected ? (
+                                <button
+                                    className="poly-execute connect-wallet metamask"
+                                    onClick={connectMetamask}
+                                    style={{ background: 'linear-gradient(135deg, #f6851b 0%, #e2761b 100%)' }}
+                                >
+                                    🦊 Connect MetaMask to Trade
+                                </button>
+                            ) : !usdcApproved ? (
+                                <button
+                                    className="poly-execute approve-usdc"
+                                    disabled={approvingUsdc || checkingApprovals}
+                                    onClick={handleApproveUSDC}
+                                >
+                                    {approvingUsdc ? 'Approving USDC...' : checkingApprovals ? 'Checking...' : '✓ Approve USDC'}
+                                </button>
+                            ) : direction === 'SELL' && !ctfApproved ? (
+                                <button
+                                    className="poly-execute approve-ctf"
+                                    disabled={approvingCtf || checkingApprovals}
+                                    onClick={handleApproveCTF}
+                                >
+                                    {approvingCtf ? 'Approving CTF...' : checkingApprovals ? 'Checking...' : '✓ Approve CTF'}
+                                </button>
+                            ) : (
+                                <button
+                                    className={`poly-execute ${side === 'YES' ? 'yes' : 'no'}`}
+                                    disabled={trading}
+                                    onClick={handleTrade}
+                                >
+                                    {trading ? 'Placing Order...' : `${direction} ${side}`}
+                                </button>
+                            )
                         )}
                     </div>
                 </div>
@@ -632,6 +1115,102 @@ function EventDetail() {
                 onClose={() => setShowWalletModal(false)}
                 onSelect={handleWalletSelect}
             />
+
+            {/* FIXED DEBUG PANEL for EventDetail */}
+            <div style={{
+                position: 'fixed',
+                bottom: '10px',
+                right: '10px',
+                width: '320px',
+                zIndex: 999999,
+                padding: '10px',
+                background: 'rgba(0,0,0,0.95)',
+                border: '1px solid #444',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                color: '#ccc',
+                maxHeight: '250px',
+                overflowY: 'auto',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+            }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#fff', borderBottom: '1px solid #444', paddingBottom: '4px' }}>📡 DEBUGGER (INLINE TRADE)</div>
+                {debugLogs.length === 0 && <div style={{ color: '#666', fontStyle: 'italic' }}>Waiting for network activity...</div>}
+                {debugLogs.map((log, i) => (
+                    <div key={i} style={{ borderBottom: '1px solid #222', padding: '4px 0', display: 'flex', alignItems: 'center' }}>
+                        <span style={{
+                            color: log.status === 'Success' ? '#4CAF50' : log.status === 'Failed' ? '#F44336' : '#FFC107',
+                            fontWeight: 'bold', minWidth: '70px'
+                        }}>
+                            [{log.status}]
+                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '5px', flex: 1, minWidth: 0 }}>
+                            <span style={{ color: '#fff' }}>{log.method} {log.type || ''}</span>
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#888' }} title={log.url}>
+                                {log.url && log.url.includes('/') ? log.url.split('/').pop().split('?')[0] : log.url}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* DFlow Order Confirmation Modal */}
+            {showDFlowConfirmation && pendingDFlowOrder && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="modal-content" style={{
+                        background: '#1a1a2e', padding: '24px', borderRadius: '12px', maxWidth: '400px', width: '90%',
+                        border: '1px solid #333'
+                    }}>
+                        <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '18px' }}>Confirm Trade</h3>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#888' }}>
+                                <span>Direction:</span>
+                                <span style={{ color: pendingDFlowOrder.direction === 'BUY' ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
+                                    {pendingDFlowOrder.direction} {pendingDFlowOrder.side}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#888' }}>
+                                <span>Amount:</span>
+                                <span style={{ color: '#fff', fontWeight: 'bold' }}>${pendingDFlowOrder.usdcAmount}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#888' }}>
+                                <span>Est. Price:</span>
+                                <span style={{ color: '#fff' }}>{(pendingDFlowOrder.marketPrice * 100).toFixed(1)}¢</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#888' }}>
+                                <span>Slippage:</span>
+                                <span style={{ color: '#fbbf24' }}>{(pendingDFlowOrder.slippageBps / 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => { setShowDFlowConfirmation(false); setPendingDFlowOrder(null); }}
+                                style={{
+                                    flex: 1, padding: '12px', border: '1px solid #333', background: 'transparent',
+                                    borderRadius: '8px', cursor: 'pointer', color: '#888'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={executeDFlowTrade}
+                                style={{
+                                    flex: 1, padding: '12px', border: 'none',
+                                    background: pendingDFlowOrder.side === 'YES' ? '#10b981' : '#ef4444',
+                                    borderRadius: '8px', cursor: 'pointer', color: '#fff', fontWeight: 'bold'
+                                }}
+                            >
+                                Confirm Trade
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

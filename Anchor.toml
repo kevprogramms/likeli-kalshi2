@@ -6,17 +6,19 @@ skip-lint = false
 vaults = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 
 [programs.devnet]
-vaults = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+vaults = "LkLi5oLN8TG7EW95N4fMGxmHv6R9HyHGUqvQrHDoFWH"
 
 [programs.mainnet]
-# Update after first mainnet deploy:
-# vaults = "<MAINNET_PROGRAM_ID>"
+# IMPORTANT: Update this after running: solana-keygen pubkey target/deploy/vaults-keypair.json
+# Then rebuild with: anchor build
+vaults = "LkLi5oLN8TG7EW95N4fMGxmHv6R9HyHGUqvQrHDoFWH"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+# For mainnet deployment, change to: mainnet-beta
+cluster = "mainnet-beta"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

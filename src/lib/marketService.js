@@ -127,15 +127,17 @@ class MarketService {
      * Check if current source supports real trading
      */
     supportsRealTrading() {
-        return this.source === 'polymarket';
+        return this.source === 'polymarket' || this.source === 'dflow';
     }
 
     /**
-     * Get trader instance (only for Polymarket)
+     * Get trader instance for current source
      */
     getTrader() {
         if (this.source === 'polymarket') {
             return polymarketTrader;
+        } else if (this.source === 'dflow') {
+            return dflowAPI;
         }
         return null;
     }

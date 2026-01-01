@@ -17,5 +17,20 @@ export default defineConfig({
   ],
   server: {
     allowedHosts: ["emperor-advances-girls-kay.trycloudflare.com"],
+    proxy: {
+      // Proxy CLOB API requests to Polymarket (bypasses CORS)
+      '/clob-api': {
+        target: 'https://clob.polymarket.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/clob-api/, ''),
+        secure: true,
+      },
+      // Proxy internal API to Backend Server
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })

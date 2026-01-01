@@ -8,7 +8,7 @@ import {
     validateAmount,
     generateId
 } from './vaultMath'
-import { executeBuy, executeSell, getYesPrice, getNoPrice, getMarketInfo } from './amm'
+// import { executeBuy, executeSell, getYesPrice, getNoPrice, getMarketInfo } from './amm'
 
 const DemoContext = createContext()
 
@@ -530,141 +530,8 @@ export function DemoProvider({ children }) {
     }
 
     const executeTrade = (vaultId, marketId, marketName, side, amount, marketResolutionDate = null) => {
-        const validation = validateAmount(amount)
-        if (!validation.valid) return { success: false, error: validation.error }
-        const tradeAmount = parseFloat(validation.value) // Convert string to number
-
-        if (!tradeAmount || isNaN(tradeAmount) || tradeAmount <= 0) {
-            return { success: false, error: 'Invalid trade amount' }
-        }
-
-        let result = { success: false, error: 'Unknown error' }
-
-        setVaults(prev => prev.map(vault => {
-            if (vault.id !== vaultId) return vault
-            if (vault.stage !== STAGE.TRADING) {
-                result = { success: false, error: 'Trading only allowed during Trading stage' }
-                return vault
-            }
-            if (tradeAmount > vault.vaultUsdc) {
-                result = { success: false, error: `Insufficient vault balance: need $${tradeAmount}, have $${vault.vaultUsdc.toFixed(2)}` }
-                return vault
-            }
-
-            if (vault.vaultType === VAULT_TYPE.RESTRICTED && vault.maxResolutionTs && marketResolutionDate) {
-                const resolutionTs = new Date(marketResolutionDate).getTime()
-                if (resolutionTs > vault.maxResolutionTs) {
-                    result = {
-                        success: false,
-                        error: `Market resolves too late.`
-                    }
-                    return vault
-                }
-            }
-
-            // Use AMM for realistic pricing
-            const ammResult = executeBuy(marketId, side, tradeAmount)
-            if (!ammResult.success) {
-                result = { success: false, error: 'AMM trade failed' }
-                return vault
-            }
-
-            const price = ammResult.avgPrice
-            const sharesAcquired = ammResult.shares
-
-            const trade = {
-                id: generateId('trade'),
-                marketId,
-                marketName,
-                side,
-                direction: 'BUY',
-                amount: tradeAmount,
-                shares: sharesAcquired,
-                price,
-                priceImpact: ammResult.priceImpact,
-                newMarketPrice: ammResult.newYesPrice,
-                timestamp: Date.now(),
-                marketResolutionDate,
-            }
-
-            const positions = [...(vault.positions || [])]
-            const existingIdx = positions.findIndex(p =>
-                p.marketId === marketId && p.side === side
-            )
-
-            // Get current market price from AMM for position valuation
-            const currentYesPrice = ammResult.newYesPrice
-            const currentNoPrice = ammResult.newNoPrice
-            const currentPrice = side === 'YES' ? currentYesPrice : currentNoPrice
-
-            if (existingIdx >= 0) {
-                const existing = positions[existingIdx]
-                const newShares = existing.shares + sharesAcquired
-                const newCostBasis = existing.costBasis + tradeAmount
-                positions[existingIdx] = {
-                    ...existing,
-                    shares: newShares,
-                    costBasis: newCostBasis,
-                    avgPrice: newCostBasis / newShares,
-                    currentPrice,
-                }
-            } else {
-                positions.push({
-                    id: generateId('pos'),
-                    marketId,
-                    marketName,
-                    side,
-                    shares: sharesAcquired,
-                    costBasis: tradeAmount,
-                    avgPrice: price,
-                    currentPrice,
-                    entryPrice: price,
-                    unrealizedPnl: 0,
-                    openedAt: Date.now(),
-                })
-            }
-
-            // Update all position valuations using AMM prices
-            let totalUnrealizedPnl = 0
-            positions.forEach(pos => {
-                // Get current price from AMM
-                const posYesPrice = getYesPrice(pos.marketId) || pos.currentPrice
-                const posNoPrice = getNoPrice(pos.marketId) || (1 - pos.currentPrice)
-                pos.currentPrice = pos.side === 'YES' ? posYesPrice : posNoPrice
-                pos.unrealizedPnl = (pos.currentPrice - pos.avgPrice) * pos.shares
-                totalUnrealizedPnl += pos.unrealizedPnl
-            })
-
-            const pnl = totalUnrealizedPnl
-
-            result = {
-                success: true,
-                trade,
-                pnl,
-                sharesAcquired,
-                price,
-                priceImpact: ammResult.priceImpact,
-                newMarketPrice: side === 'YES' ? ammResult.newYesPrice : ammResult.newNoPrice,
-            }
-
-            const newCash = toUSDC(vault.vaultUsdc - tradeAmount)
-            let positionValue = 0
-            positions.forEach(p => positionValue += p.shares * p.currentPrice)
-
-            const newTvl = toUSDC(newCash + positionValue)
-
-            return {
-                ...vault,
-                vaultUsdc: newCash,
-                tvl: newTvl,
-                highWaterMark: Math.max(vault.highWaterMark || 0, newTvl),
-                positions,
-                trades: [...(vault.trades || []), trade],
-                data: [...vault.data.slice(1), newTvl / 100],
-            }
-        }))
-
-        return result
+        // Mock trading disabled
+        return { success: false, error: 'Trading temporarily disabled (Mock AMM removed)' }
     }
 
     const closePosition = (vaultId, positionId) => {

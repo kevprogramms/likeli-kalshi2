@@ -1,55 +1,58 @@
-import { useState, useEffect } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { polymarketTrader } from '../lib/polymarket'
-import WalletModal from './WalletModal'
+import { useState } from 'react'
+import { NavLink } from 'react-router-dom'
+import { useWallet } from '../lib/WalletContext'
 import './Navbar.css'
 
 function Navbar() {
-    const location = useLocation()
-    const [isConnected, setIsConnected] = useState(false)
-    const [showWalletModal, setShowWalletModal] = useState(false)
-    const [walletAddress, setWalletAddress] = useState(null)
+    const {
+        phantomConnected,
+        phantomAddress,
+        metamaskConnected,
+        metamaskAddress,
+        connectPhantom,
+        connectMetamask,
+        disconnectPhantom,
+        disconnectMetamask,
+        connecting,
+        formatAddress,
+        isAnyWalletConnected
+    } = useWallet()
 
-    // Check wallet connection on mount
-    useEffect(() => {
-        setIsConnected(polymarketTrader.isConnected())
-        if (polymarketTrader.funder) {
-            setWalletAddress(polymarketTrader.funder)
-        }
-    }, [])
+    const [showDropdown, setShowDropdown] = useState(false)
 
-    const handleConnectWallet = () => {
-        if (isConnected) {
-            // Already connected - could add disconnect logic here
-            return
-        }
-        setShowWalletModal(true)
+    const handleWalletClick = () => {
+        setShowDropdown(!showDropdown)
     }
 
-    const handleWalletSelect = async (walletType) => {
+    const handleConnectPhantom = async () => {
         try {
-            const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'phantom' ? 'Phantom' : 'wallet'
-            console.log(`Connecting ${walletName}...`)
-
-            if (walletType === 'metamask' || walletType === 'phantom') {
-                await polymarketTrader.connectWallet(walletType)
-                await polymarketTrader.initialize()
-                setIsConnected(true)
-                setWalletAddress(polymarketTrader.funder)
-                console.log(`${walletName} connected!`)
-            } else if (walletType === 'walletconnect') {
-                throw new Error('WalletConnect not implemented yet')
-            }
+            await connectPhantom()
+            setShowDropdown(false)
         } catch (err) {
-            console.error('Wallet connection failed:', err)
-            throw err
+            console.error('Phantom connection failed:', err)
         }
     }
 
-    // Format address for display (0x1234...5678)
-    const formatAddress = (addr) => {
-        if (!addr) return ''
-        return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+    const handleConnectMetamask = async () => {
+        try {
+            await connectMetamask()
+            setShowDropdown(false)
+        } catch (err) {
+            console.error('MetaMask connection failed:', err)
+        }
+    }
+
+    const getButtonLabel = () => {
+        if (connecting) return 'Connecting...'
+
+        if (phantomConnected && metamaskConnected) {
+            return `🔗 Both Connected`
+        } else if (phantomConnected) {
+            return `👻 ${formatAddress(phantomAddress)}`
+        } else if (metamaskConnected) {
+            return `🦊 ${formatAddress(metamaskAddress)}`
+        }
+        return 'Connect Wallet'
     }
 
     return (
@@ -102,27 +105,85 @@ function Navbar() {
                 </div>
 
                 <div className="navbar-right">
-                    <button
-                        className={`wallet-btn ${isConnected ? 'connected' : ''}`}
-                        onClick={handleConnectWallet}
-                    >
-                        {isConnected ? (
-                            <>
-                                <span className="wallet-dot"></span>
-                                {formatAddress(walletAddress)}
-                            </>
-                        ) : (
-                            'Connect Wallet'
+                    <div className="wallet-dropdown-container">
+                        <button
+                            className={`wallet-btn ${isAnyWalletConnected ? 'connected' : ''}`}
+                            onClick={handleWalletClick}
+                            disabled={connecting}
+                        >
+                            {isAnyWalletConnected && <span className="wallet-dot"></span>}
+                            {getButtonLabel()}
+                            <span className="dropdown-arrow">{showDropdown ? '▲' : '▼'}</span>
+                        </button>
+
+                        {showDropdown && (
+                            <div className="wallet-dropdown">
+                                {/* Phantom (Solana / DFlow) */}
+                                <div className="wallet-dropdown-section">
+                                    <div className="wallet-dropdown-header">
+                                        <span>👻 Phantom</span>
+                                        <span className="wallet-chain">Solana • Kalshi</span>
+                                    </div>
+                                    {phantomConnected ? (
+                                        <div className="wallet-dropdown-connected">
+                                            <span className="wallet-address">{formatAddress(phantomAddress)}</span>
+                                            <button
+                                                className="wallet-disconnect-btn"
+                                                onClick={() => { disconnectPhantom(); setShowDropdown(false); }}
+                                            >
+                                                Disconnect
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            className="wallet-connect-btn phantom"
+                                            onClick={handleConnectPhantom}
+                                            disabled={connecting}
+                                        >
+                                            Connect Phantom
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* MetaMask (Polygon / Polymarket) */}
+                                <div className="wallet-dropdown-section">
+                                    <div className="wallet-dropdown-header">
+                                        <span>🦊 MetaMask</span>
+                                        <span className="wallet-chain">Polygon • Polymarket</span>
+                                    </div>
+                                    {metamaskConnected ? (
+                                        <div className="wallet-dropdown-connected">
+                                            <span className="wallet-address">{formatAddress(metamaskAddress)}</span>
+                                            <button
+                                                className="wallet-disconnect-btn"
+                                                onClick={() => { disconnectMetamask(); setShowDropdown(false); }}
+                                            >
+                                                Disconnect
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            className="wallet-connect-btn metamask"
+                                            onClick={handleConnectMetamask}
+                                            disabled={connecting}
+                                        >
+                                            Connect MetaMask
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         )}
-                    </button>
+                    </div>
                 </div>
             </nav>
 
-            <WalletModal
-                isOpen={showWalletModal}
-                onClose={() => setShowWalletModal(false)}
-                onSelect={handleWalletSelect}
-            />
+            {/* Click outside to close dropdown */}
+            {showDropdown && (
+                <div
+                    className="wallet-dropdown-backdrop"
+                    onClick={() => setShowDropdown(false)}
+                />
+            )}
         </>
     )
 }

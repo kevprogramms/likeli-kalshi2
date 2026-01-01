@@ -29,6 +29,18 @@ function TradeModal({ isOpen, onClose, event, initialSide = 'YES', vaultId, mark
     const [approving, setApproving] = useState(false)
     const [checkingApprovals, setCheckingApprovals] = useState(false)
 
+    // Debug State
+    const [debugLogs, setDebugLogs] = useState([])
+
+    // Listen for Relayer Debug events
+    useEffect(() => {
+        const handleDebug = (e) => {
+            setDebugLogs(prev => [e.detail, ...prev].slice(0, 10))
+        }
+        window.addEventListener('RELAYER_DEBUG', handleDebug)
+        return () => window.removeEventListener('RELAYER_DEBUG', handleDebug)
+    }, [])
+
     // Reset side when modal opens with new initialSide
     useEffect(() => {
         setSide(initialSide)
@@ -95,27 +107,44 @@ function TradeModal({ isOpen, onClose, event, initialSide = 'YES', vaultId, mark
         setError('')
 
         try {
-            const result = await polymarketTrader.connectWallet()
-            setWalletAddress(result.address)
+            // Route to correct wallet based on market source
+            if (isPolymarket) {
+                // Polymarket → MetaMask (Polygon)
+                const result = await polymarketTrader.connectWallet()
+                setWalletAddress(result.address)
 
-            // Initialize CLOB client
-            await polymarketTrader.initialize()
-            setWalletConnected(true)
+                // Initialize CLOB client
+                await polymarketTrader.initialize()
+                setWalletConnected(true)
 
-            // Fetch balances and approvals after connecting
-            try {
-                const [balance, matic, approvals] = await Promise.all([
-                    polymarketTrader.getUSDCBalance(),
-                    polymarketTrader.getMaticBalance(),
-                    polymarketTrader.checkAllApprovals(market?.negRisk || false)
-                ]);
+                // Fetch balances and approvals after connecting
+                try {
+                    const [balance, matic, approvals] = await Promise.all([
+                        polymarketTrader.getUSDCBalance(),
+                        polymarketTrader.getMaticBalance(),
+                        polymarketTrader.checkAllApprovals(market?.negRisk || false)
+                    ]);
 
-                setUsdcBalance(balance);
-                setMaticBalance(matic);
-                setApprovalsStatus(approvals);
-                setNeedsApproval(!approvals.allApproved);
-            } catch (balanceErr) {
-                console.error('Error fetching balances:', balanceErr);
+                    setUsdcBalance(balance);
+                    setMaticBalance(matic);
+                    setApprovalsStatus(approvals);
+                    setNeedsApproval(!approvals.allApproved);
+                } catch (balanceErr) {
+                    console.error('Error fetching balances:', balanceErr);
+                }
+            } else {
+                // DFlow/Kalshi → Phantom (Solana)
+                if (!window.solana || !window.solana.isPhantom) {
+                    setError('Phantom wallet not installed. Download from https://phantom.app')
+                    setConnectingWallet(false)
+                    return
+                }
+
+                const resp = await window.solana.connect()
+                setWalletAddress(resp.publicKey.toString())
+                setWalletConnected(true)
+
+                console.log(`[Phantom] Connected: ${resp.publicKey.toString()}`)
             }
         } catch (err) {
             setError(err.message || 'Failed to connect wallet')
@@ -239,8 +268,90 @@ function TradeModal({ isOpen, onClose, event, initialSide = 'YES', vaultId, mark
             } else if (isPolymarket && !hasTokenId) {
                 // Missing token ID - can't trade
                 setError('This market does not have trading tokens. Unable to trade.')
+            } else if (marketSource === 'dflow' || event.source === 'dflow') {
+                // DFlow/Kalshi real trading via Solana
+                // Check if Phantom wallet is installed
+                if (!window.solana || !window.solana.isPhantom) {
+                    setError('Phantom wallet not detected. Install Phantom to trade on Kalshi: https://phantom.app')
+                    setLoading(false)
+                    return
+                }
+
+                try {
+                    // Connect to Phantom if not already connected
+                    if (!window.solana.isConnected) {
+                        await window.solana.connect()
+                    }
+
+                    const walletPublicKey = window.solana.publicKey.toString()
+                    console.log(`[DFlow Trade] Connected wallet: ${walletPublicKey}`)
+
+                    // TODO: Check USDC balance on Solana (requires SPL token program integration)
+                    // For now, we'll proceed with the trade request
+
+                    // Step 1: Request a quote from DFlow
+                    console.log(`[DFlow Trade] Requesting quote for ${side} on ${market.id}`)
+
+                    const quoteParams = {
+                        marketId: market.id || event.id,
+                        side: side.toLowerCase(), // 'yes' or 'no'
+                        amount: tradeAmount,
+                        walletAddress: walletPublicKey
+                    }
+
+                    const quote = await marketService.getTrader().requestQuote(quoteParams)
+
+                    if (!quote || !quote.quoteId) {
+                        setError('Failed to get quote from DFlow. Please try again.')
+                        setLoading(false)
+                        return
+                    }
+
+                    console.log(`[DFlow Trade] Quote received:`, quote)
+
+                    // Step 2: Execute the trade with the quote
+                    const executeParams = {
+                        quoteId: quote.quoteId,
+                        walletAddress: walletPublicKey,
+                        // User needs to sign the transaction with Phantom
+                        signature: null // Will be handled by DFlow SDK if needed
+                    }
+
+                    const tradeResult = await marketService.getTrader().executeTrade(executeParams)
+
+                    if (tradeResult.success || tradeResult.transactionHash) {
+                        setSuccess(`Trade executed on Kalshi!\\nTx: ${tradeResult.transactionHash?.slice(0, 8)}...`)
+
+                        // Record in local vault for tracking
+                        executeTrade(vaultId, event.id, event.title, side, tradeAmount, {
+                            source: 'dflow',
+                            transactionHash: tradeResult.transactionHash,
+                            quoteId: quote.quoteId,
+                            price
+                        })
+
+                        setAmount('')
+                        setTimeout(() => {
+                            onClose()
+                            setSuccess('')
+                        }, 3000)
+                    } else {
+                        setError(tradeResult.error || 'Failed to execute trade on DFlow')
+                    }
+
+                } catch (err) {
+                    console.error('[DFlow Trade] Error:', err)
+
+                    if (err.message.includes('User rejected')) {
+                        setError('Transaction cancelled by user')
+                    } else if (err.message.includes('Quote API error')) {
+                        setError('DFlow API error: ' + err.message)
+                    } else {
+                        setError('Trade failed: ' + err.message)
+                    }
+                }
             } else {
-                // Non-Polymarket demo trading (DFlow)
+                // Fallback demo trading for other sources
                 const result = executeTrade(vaultId, event.id, event.title, side, tradeAmount)
 
                 if (result.success) {
@@ -315,7 +426,7 @@ function TradeModal({ isOpen, onClose, event, initialSide = 'YES', vaultId, mark
                         {isPolymarket && !walletConnected && (
                             <div className="wallet-connect-section">
                                 <p className="wallet-info">
-                                    🔐 <strong>Real Trading:</strong> Connect your Polygon wallet to place live orders on Polymarket with real USDC.
+                                    🔐 <strong>Real Trading:</strong> Connect your Polygon wallet (MetaMask) to place live orders on Polymarket with real USDC.
                                 </p>
                                 <Button
                                     variant="secondary"
@@ -323,10 +434,30 @@ function TradeModal({ isOpen, onClose, event, initialSide = 'YES', vaultId, mark
                                     onClick={handleConnectWallet}
                                     disabled={connectingWallet}
                                 >
-                                    {connectingWallet ? 'Connecting...' : '🔗 Connect Polygon Wallet'}
+                                    {connectingWallet ? 'Connecting...' : '🦊 Connect MetaMask (Polygon)'}
                                 </Button>
                                 <p className="wallet-note">
                                     Orders will appear in your Polymarket account
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Wallet Connection for DFlow/Kalshi */}
+                        {!isPolymarket && !walletConnected && (marketSource === 'dflow' || event.source === 'dflow') && (
+                            <div className="wallet-connect-section">
+                                <p className="wallet-info">
+                                    🔐 <strong>Real Trading:</strong> Connect your Solana wallet (Phantom) to trade on Kalshi with real USDC.
+                                </p>
+                                <Button
+                                    variant="secondary"
+                                    fullWidth
+                                    onClick={handleConnectWallet}
+                                    disabled={connectingWallet}
+                                >
+                                    {connectingWallet ? 'Connecting...' : '👻 Connect Phantom (Solana)'}
+                                </Button>
+                                <p className="wallet-note">
+                                    Trades execute on Kalshi via DFlow
                                 </p>
                             </div>
                         )}
@@ -463,6 +594,43 @@ function TradeModal({ isOpen, onClose, event, initialSide = 'YES', vaultId, mark
                                 : 'This is a demo trade. Connect wallet for real Polymarket trading.'
                             }
                         </p>
+
+                        {/* Relayer Debug Panel - Visual Feedback for User */}
+                        <div style={{
+                            position: 'fixed',
+                            bottom: '10px',
+                            right: '10px',
+                            width: '300px',
+                            zIndex: 100000,
+                            padding: '10px',
+                            background: '#000',
+                            border: '1px solid #444',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            color: '#ccc',
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            boxShadow: '0 0 10px rgba(0,0,0,0.5)'
+                        }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '5px', color: '#fff', borderBottom: '1px solid #444' }}>📡 NETWORK RELAYER LOGS:</div>
+                            {debugLogs.length === 0 && <div style={{ color: '#666' }}>Waiting for network activity...</div>}
+                            {debugLogs.map((log, i) => (
+                                <div key={i} style={{ borderBottom: '1px solid #222', padding: '3px 0', display: 'flex', alignItems: 'center' }}>
+                                    <span style={{
+                                        color: log.status === 'Success' ? '#4CAF50' : log.status === 'Failed' ? '#F44336' : '#FFC107',
+                                        fontWeight: 'bold', minWidth: '80px'
+                                    }}>
+                                        [{log.status}]
+                                    </span>
+                                    <span style={{ color: '#fff', marginRight: '5px' }}>{log.method}</span>
+                                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }} title={log.url}>
+                                        {log.url.split('clob.polymarket.com').pop()}
+                                    </span>
+                                    {log.error && <span style={{ color: '#F44336', marginLeft: '5px' }}>❌ {log.error}</span>}
+                                </div>
+                            ))}
+                        </div>
                     </>
                 )}
             </div>

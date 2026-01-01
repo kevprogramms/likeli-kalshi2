@@ -1,30 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDemo } from '../lib/DemoContext'
+import { marketService } from '../lib/marketService'
 import Button from '../components/Button'
 import EtfBasketCard from '../components/EtfBasketCard'
 import './Vaults.css'
 
-// Sample ETF Baskets data
-const sampleEtfBaskets = [
+// Fallback sample data (only used if API is unavailable)
+const fallbackEtfBaskets = [
     {
         id: 'etf-1',
         name: 'Election Hedge Basket',
         leader: '0x8a7d...e4f2',
         description: 'Diversified exposure to major political event outcomes',
-        totalShares: '100000',
-        cashUsdc: '25000',
-        liquidityBufferBps: 1000,
-        exitFeeBps: 50,
+        totalShares: 100000,
+        cashUsdc: 25000,
         positions: [
-            { marketId: 'trump-win-2024', side: 'YES', shares: '30000', marketName: 'Trump wins 2024' },
-            { marketId: 'dem-senate-2024', side: 'NO', shares: '20000', marketName: 'Dems keep Senate' },
-            { marketId: 'recession-2025', side: 'YES', shares: '15000', marketName: 'US Recession 2025' },
+            { marketId: 'trump-win-2024', side: 'YES', shares: 30000, marketName: 'Trump wins 2024' },
+            { marketId: 'dem-senate-2024', side: 'NO', shares: 20000, marketName: 'Dems keep Senate' },
         ],
         stage: 'Trading',
         nav: 1.15,
         tvl: 115000,
-        yourShares: 0,
         age: 30,
         data: [45, 48, 52, 55, 58, 60, 62, 65, 68, 70],
     },
@@ -33,61 +30,16 @@ const sampleEtfBaskets = [
         name: 'Crypto Sentiment Index',
         leader: '0x2c4b...9a1e',
         description: 'Track crypto market sentiment through prediction markets',
-        totalShares: '50000',
-        cashUsdc: '15000',
-        liquidityBufferBps: 500,
-        exitFeeBps: 100,
+        totalShares: 50000,
+        cashUsdc: 15000,
         positions: [
-            { marketId: 'btc-100k-2024', side: 'YES', shares: '25000', marketName: 'BTC hits $100K in 2024' },
-            { marketId: 'eth-10k-2025', side: 'YES', shares: '10000', marketName: 'ETH hits $10K in 2025' },
+            { marketId: 'btc-100k-2024', side: 'YES', shares: 25000, marketName: 'BTC hits $100K in 2024' },
         ],
         stage: 'Trading',
         nav: 0.95,
         tvl: 47500,
-        yourShares: 0,
         age: 15,
         data: [60, 58, 55, 52, 50, 48, 46, 45, 44, 43],
-    },
-    {
-        id: 'etf-3',
-        name: 'Tech Events Tracker',
-        leader: '0x5f3a...c7d8',
-        description: 'Major tech company event outcomes',
-        totalShares: '75000',
-        cashUsdc: '30000',
-        liquidityBufferBps: 750,
-        exitFeeBps: 75,
-        positions: [
-            { marketId: 'apple-ar-2025', side: 'YES', shares: '20000', marketName: 'Apple AR glasses 2025' },
-            { marketId: 'openai-ipo-2025', side: 'NO', shares: '15000', marketName: 'OpenAI IPO 2025' },
-            { marketId: 'tesla-robotaxi', side: 'YES', shares: '10000', marketName: 'Tesla Robotaxi launch' },
-        ],
-        stage: 'Trading',
-        nav: 1.08,
-        tvl: 81000,
-        yourShares: 0,
-        age: 45,
-        data: [50, 52, 54, 55, 57, 58, 60, 61, 62, 63],
-    },
-    {
-        id: 'etf-4',
-        name: 'Sports & Entertainment',
-        leader: '0x9e2f...b3a6',
-        description: 'Major sports and entertainment event predictions',
-        totalShares: '60000',
-        cashUsdc: '20000',
-        liquidityBufferBps: 800,
-        exitFeeBps: 50,
-        positions: [
-            { marketId: 'superbowl-2025', side: 'YES', shares: '15000', marketName: 'Chiefs win SB 2025' },
-            { marketId: 'oscars-2025', side: 'NO', shares: '12000', marketName: 'Wicked wins Best Picture' },
-        ],
-        stage: 'Trading',
-        nav: 1.03,
-        tvl: 61800,
-        yourShares: 0,
-        age: 22,
-        data: [48, 50, 52, 51, 53, 55, 54, 56, 55, 57],
     },
 ]
 
@@ -95,8 +47,40 @@ function EtfBaskets() {
     const navigate = useNavigate()
     const { etfBaskets: customBaskets = [] } = useDemo()
     const [searchTerm, setSearchTerm] = useState('')
+    const [backendBaskets, setBackendBaskets] = useState([])
+    const [loading, setLoading] = useState(true)
 
-    const allBaskets = [...sampleEtfBaskets, ...customBaskets]
+    // Fetch ETF baskets from backend API
+    useEffect(() => {
+        const loadBaskets = async () => {
+            try {
+                const data = await marketService.getEtfBaskets()
+                if (Array.isArray(data) && data.length > 0) {
+                    // Transform backend data to match UI expectations
+                    const transformed = data.map(basket => ({
+                        ...basket,
+                        leader: basket.manager || 'Likeli Platform',
+                        tvl: basket.totalShares * (basket.nav || 1),
+                        age: Math.floor((Date.now() - new Date(basket.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+                        data: [50, 52, 54, 56, 58, 60, 62, 64, 66, 68], // Default chart data
+                    }))
+                    setBackendBaskets(transformed)
+                } else {
+                    // Use fallback data if API returns empty
+                    setBackendBaskets(fallbackEtfBaskets)
+                }
+            } catch (e) {
+                console.error('Failed to load ETF baskets from API:', e)
+                setBackendBaskets(fallbackEtfBaskets)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadBaskets()
+    }, [])
+
+    const allBaskets = [...backendBaskets, ...customBaskets]
+
 
     const filteredBaskets = allBaskets.filter(basket => {
         if (!searchTerm) return true
