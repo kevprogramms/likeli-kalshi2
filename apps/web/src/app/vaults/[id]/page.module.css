@@ -1,0 +1,448 @@
+.page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-8);
+}
+
+.header {
+    margin-bottom: var(--space-6);
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+
+.description {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-3);
+}
+
+.meta {
+    display: flex;
+    gap: var(--space-4);
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
+}
+
+.manager {
+    color: var(--color-primary);
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.statCard {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.statLabel {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+}
+
+.statValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.positive {
+    color: var(--color-success);
+}
+
+.negative {
+    color: var(--color-danger);
+}
+
+.mainGrid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: var(--space-6);
+}
+
+.leftCol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.section {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+}
+
+.chartPlaceholder {
+    height: 150px;
+}
+
+.chart {
+    width: 100%;
+    height: 100%;
+}
+
+.table {
+    overflow-x: auto;
+}
+
+.tableHeader {
+    display: grid;
+    grid-template-columns: 2fr repeat(4, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.th {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+}
+
+.tableRow {
+    display: grid;
+    grid-template-columns: 2fr repeat(4, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tableRow:last-child {
+    border-bottom: none;
+}
+
+.td {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.td.time {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+.yes {
+    color: var(--color-success);
+    background: var(--color-success-bg);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.no {
+    color: var(--color-danger);
+    background: var(--color-danger-bg);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.rightCol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.actionCard {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+}
+
+.tabs {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+}
+
+.tab {
+    flex: 1;
+    padding: var(--space-3);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-tertiary);
+    border: none;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.tab.active {
+    color: var(--color-primary);
+    background: var(--color-primary-subtle);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.input {
+    padding: var(--space-4);
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    background: var(--color-bg-input);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.estimate {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
+}
+
+.actionBtn {
+    padding: var(--space-4);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-bg-primary);
+    background: var(--color-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.actionBtn:hover:not(:disabled) {
+    box-shadow: var(--shadow-glow);
+}
+
+.actionBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.disclaimer {
+    margin-top: var(--space-4);
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    text-align: center;
+}
+
+.managerCard {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.managerTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: var(--space-2);
+}
+
+.managerBtn {
+    padding: var(--space-3);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.managerBtn:hover {
+    background: var(--color-bg-hover);
+}
+
+.managerBtnDanger {
+    padding: var(--space-3);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-danger);
+    background: transparent;
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-md);
+}
+
+@media (max-width: 1024px) {
+    .mainGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Balance Card */
+.balanceCard {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+    border: 1px solid var(--color-primary);
+}
+
+.balanceTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: var(--space-4);
+}
+
+.balanceGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.balanceItem {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.balanceLabel {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+}
+
+.balanceValue {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.resetBtn {
+    width: 100%;
+    padding: var(--space-2);
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.resetBtn:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-primary);
+}
+
+/* Message Feedback */
+.message {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    margin-bottom: var(--space-3);
+}
+
+.message.success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border: 1px solid var(--color-success);
+}
+
+.message.error {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger);
+}
+
+/* Transaction History */
+.historyCard {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+}
+
+.historyTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+    color: var(--color-text-secondary);
+}
+
+.historyList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.historyItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    padding: var(--space-2);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+.historyIcon {
+    font-size: 1rem;
+}
+
+/* Stage Badge */
+.stage {
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stage.open {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.stage.trading {
+    background: rgba(255, 184, 0, 0.1);
+    color: var(--color-warning);
+}
+
+.stage.settlement {
+    background: rgba(255, 68, 102, 0.1);
+    color: var(--color-danger);
+}
+
+.stage.closed {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-tertiary);
+}
+
+/* Fee Warning */
+.estimate.warning {
+    color: var(--color-warning);
+}
+
+.fee {
+    color: var(--color-text-tertiary);
+}
+
+.age {
+    color: var(--color-text-tertiary);
+}

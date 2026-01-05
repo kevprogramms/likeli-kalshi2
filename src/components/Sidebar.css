@@ -1,0 +1,145 @@
+.sidebar {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    bottom: 0;
+    width: 220px;
+    background: var(--color-bg-primary);
+    border-right: 1px solid var(--color-border);
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow);
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+
+.sidebar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4) var(--space-3);
+    transform: scale(1.25);
+    transform-origin: top left;
+}
+
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+    position: relative;
+}
+
+.sidebar-link:hover:not(.disabled) {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-link.active {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Light mode sidebar */
+[data-theme="light"] .sidebar-link:hover:not(.disabled) {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .sidebar-link.active {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: var(--color-primary);
+    border-radius: var(--radius-full);
+}
+
+.sidebar-link.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.sidebar-icon {
+    font-size: var(--text-lg);
+    color: var(--color-text-tertiary);
+    transition: color var(--transition-base);
+}
+
+.sidebar-link:hover .sidebar-icon,
+.sidebar-link.active .sidebar-icon {
+    color: var(--color-text-primary);
+}
+
+.sidebar-label {
+    flex: 1;
+}
+
+.coming-soon {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.sidebar-footer {
+    padding: var(--space-4) var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.sidebar-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+}
+
+.stat-value {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-success);
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 260px;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        background: var(--color-bg-secondary);
+    }
+}

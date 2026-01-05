@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Renamed from Vault to Fund for Likeli Funds
+model Fund {
+  id              String     @id @default(uuid())
+  address         String     @unique // Solana FundState pubkey
+  fundId          String     // On-chain fund_id
+  manager         String     // Manager pubkey
+  name            String
+  symbol          String?
+  description     String?
+  
+  // Fee configuration (basis points)
+  depositFeeBps   Int        @default(0)   // 0-300 (0-3%)
+  perfFeeBps      Int        @default(1000) // 0-3000 (0-30%)
+  
+  // Lifecycle
+  stage           String     @default("Open") // Open, Trading, Settlement, Closed
+  tradingStartTs  DateTime?
+  tradingEndTs    DateTime?
+  
+  // Financial tracking
+  initialAumUsdc  BigInt?    // Locked at trading start
+  perfFeeDueUsdc  BigInt?    // Calculated at finalize
+  perfFeePaid     Boolean    @default(false)
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  snapshots       Snapshot[]
+  positions       Position[]
+  trades          Trade[]
+  depositors      Depositor[]
+}
+
+model Depositor {
+  id        String   @id @default(uuid())
+  fundId    String
+  fund      Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  wallet    String   // Investor wallet pubkey
+  shares    BigInt   // Current share balance
+  deposited BigInt   @default(0) // Total deposited (gross)
+  withdrawn BigInt   @default(0) // Total withdrawn
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([fundId, wallet])
+  @@index([fundId])
+}
+
+model Snapshot {
+  id          String   @id @default(uuid())
+  fundId      String
+  fund        Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  timestamp   DateTime @default(now())
+  nav         BigInt   // 6 decimals (vault USDC balance)
+  sharePrice  BigInt   // 6 decimals
+  tvl         BigInt   // 6 decimals
+  totalShares BigInt
+  stage       String?  // Current stage at snapshot time
+
+  @@index([fundId, timestamp])
+}
+
+model Position {
+  id           String   @id @default(uuid())
+  fundId       String
+  fund         Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  marketId     String   // DFlow/Kalshi market ID
+  marketName   String?
+  side         String   // "YES" or "NO"
+  quantity     BigInt   // Token amount (6 decimals)
+  avgPrice     BigInt   // Average entry price (6 decimals)
+  currentPrice BigInt?  // Latest price
+  unrealizedPnl BigInt? // Current unrealized PnL
+  isOpen       Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([fundId, marketId, side])
+  @@index([fundId])
+}
+
+model Trade {
+  id         String   @id @default(uuid())
+  fundId     String
+  fund       Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  txSig      String   @unique // Solana transaction signature
+  marketId   String
+  marketName String?
+  side       String   // "YES" or "NO"
+  direction  String   // "BUY" or "SELL"
+  quantity   BigInt   // 6 decimals
+  price      BigInt   // 6 decimals
+  fee        BigInt   @default(0)
+  timestamp  DateTime @default(now())
+
+  @@index([fundId, timestamp])
+}
+
+// Protocol configuration (singleton)
+model ProtocolConfig {
+  id          String @id @default("singleton")
+  adminPubkey String
+  usdcMint    String
+  dflowProgram String?
+  maxDepositFeeBps Int @default(300)
+  maxPerfFeeBps    Int @default(3000)
+  updatedAt   DateTime @updatedAt
+}
+
+// Manager leaderboard / scoring
+model ManagerScore {
+  id            String   @id @default(uuid())
+  wallet        String   @unique
+  fundsManaged  Int      @default(0)
+  totalAumUsd   BigInt   @default(0)
+  avgReturn     Float    @default(0)
+  bestReturn    Float    @default(0)
+  worstReturn   Float    @default(0)
+  winRate       Float    @default(0) // % of profitable funds
+  updatedAt     DateTime @updatedAt
+}

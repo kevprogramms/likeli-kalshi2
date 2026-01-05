@@ -1,0 +1,9 @@
+.sparkline {
+    display: inline-flex;
+    align-items: center;
+}
+
+.sparkline svg {
+    width: 100%;
+    height: 100%;
+}

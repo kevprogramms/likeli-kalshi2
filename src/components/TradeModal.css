@@ -1,0 +1,319 @@
+/* Trade Modal Styles */
+.trade-modal {
+    max-width: 480px;
+}
+
+.trade-header {
+    margin-bottom: var(--space-4);
+}
+
+.trade-vault {
+    font-size: var(--text-sm);
+    color: var(--color-primary);
+    background: var(--color-primary-subtle);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+}
+
+.trade-market-info {
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.market-category {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.market-title {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-primary);
+    margin-top: var(--space-2);
+    line-height: 1.4;
+}
+
+.trade-sides {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.side-btn {
+    flex: 1;
+    padding: var(--space-4);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-bold);
+    font-size: var(--text-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    background: transparent;
+}
+
+.side-btn.yes {
+    color: var(--color-success);
+}
+
+.side-btn.yes.active,
+.side-btn.yes:hover {
+    background: var(--color-success-bg);
+    border-color: var(--color-success);
+}
+
+.side-btn.no {
+    color: var(--color-danger);
+}
+
+.side-btn.no.active,
+.side-btn.no:hover {
+    background: var(--color-danger-bg);
+    border-color: var(--color-danger);
+}
+
+.trade-preview {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+}
+
+.preview-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-2) 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+}
+
+.preview-row:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.payout-value {
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+}
+
+.return-value {
+    font-weight: var(--font-bold);
+    color: var(--color-success);
+}
+
+.trade-disclaimer {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    text-align: center;
+    margin-top: var(--space-4);
+}
+
+/* Success message */
+.trade-modal .success-message {
+    text-align: center;
+    padding: var(--space-8) var(--space-4);
+}
+
+.trade-modal .success-message svg {
+    margin: 0 auto var(--space-4);
+}
+
+.trade-modal .success-message p {
+    color: var(--color-text-primary);
+    font-size: var(--text-base);
+    white-space: pre-line;
+}
+
+/* Form elements */
+.trade-modal .form-group {
+    margin-bottom: var(--space-4);
+}
+
+.trade-modal .form-group label {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+}
+
+.trade-modal .form-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg-input);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: var(--text-lg);
+}
+
+.trade-modal .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.trade-modal .form-balance {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+}
+
+.trade-modal .balance-value {
+    color: var(--color-text-primary);
+}
+
+.trade-modal .error-message {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-sm);
+}
+
+/* Trade source badge */
+.trade-source {
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    margin-left: auto;
+}
+
+.trade-source.polymarket {
+    background: rgba(147, 51, 234, 0.15);
+    color: #a855f7;
+}
+
+/* Wallet connection section */
+.wallet-connect-section {
+    background: var(--color-bg-elevated);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    text-align: center;
+}
+
+.wallet-info {
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-3);
+}
+
+.wallet-note {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+    margin-top: var(--space-3);
+}
+
+/* Wallet connected state */
+.wallet-connected-section {
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.wallet-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+}
+
+.status-dot {
+    font-size: var(--text-xs);
+}
+
+.status-dot.connected {
+    color: var(--color-success);
+}
+
+.wallet-label {
+    color: var(--color-text-secondary);
+}
+
+.wallet-addr {
+    font-family: monospace;
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.wallet-warning {
+    color: var(--color-warning);
+    font-size: var(--text-xs);
+    margin-top: var(--space-2);
+    margin-bottom: 0;
+}
+
+.wallet-success {
+    color: var(--color-success);
+    font-size: var(--text-sm);
+    margin-top: var(--space-2);
+    margin-bottom: 0;
+    font-weight: var(--font-medium);
+}
+
+/* Wallet Balances */
+.wallet-balances {
+    display: flex;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+    padding: var(--space-2) 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.balance-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.wallet-balances .balance-label {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+}
+
+.wallet-balances .balance-value {
+    color: var(--color-text-primary);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+}
+
+/* Approval Section */
+.approval-section {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.approval-section .wallet-warning {
+    margin-bottom: var(--space-3);
+}
+
+/* Order result details */
+.order-details {
+    margin-top: var(--space-4);
+}
+
+.order-details span {
+    color: var(--color-primary);
+    font-size: var(--text-sm);
+    cursor: pointer;
+}
+
+.order-details span:hover {
+    text-decoration: underline;
+}
+
+/* Trade header with wallet status */
+.trade-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}

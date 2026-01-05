@@ -1,0 +1,137 @@
+# Managing a Fund
+
+Once your fund is created, you're responsible for managing it effectively throughout its lifecycle.
+
+---
+
+## Manager Dashboard
+
+Access your dashboard at `/manage/{fund-address}` to view:
+
+| Metric | Description |
+|--------|-------------|
+| **AUM** | Total assets under management (USDC + positions) |
+| **Performance** | Current return vs initial AUM |
+| **Open Positions** | Active prediction market positions |
+| **Trade History** | Log of all executed trades |
+| **Time Remaining** | Countdown to trading end |
+| **Stage** | Current lifecycle stage |
+
+---
+
+## Manager Responsibilities
+
+### Strategic Execution
+- Deploy capital according to your stated strategy
+- Monitor market conditions continuously
+- Adjust positions as new information emerges
+
+### Position Management
+- Track all open positions
+- Plan exit strategies before trading ends
+- Ensure all positions are closed before finalization
+
+### Risk Control
+- Never risk more than you can afford to lose
+- Set mental stop-losses
+- Diversify across markets when appropriate
+
+### Communication
+- Keep investors informed of major decisions
+- Be transparent about strategy changes
+- Explain significant wins or losses
+
+---
+
+## Risk Management Guidelines
+
+### Position Sizing
+
+| Rule | Recommendation |
+|------|----------------|
+| **Single Position** | Max 15-20% of AUM per market |
+| **Correlated Markets** | Combined exposure ≤ 30% |
+| **New Markets** | Start small, scale with conviction |
+
+### Correlation Awareness
+Markets can be correlated. Example:
+- "Fed cuts rates in December" (80% YES)
+- "Markets rally in Q1 2025" (65% YES)
+
+If both resolve together, your portfolio risk may be higher than individual positions suggest.
+
+### Gradual Deployment
+Don't deploy all capital immediately:
+- Week 1: 30-40% deployment
+- Week 2-3: Scale to 60-70%
+- Final weeks: Reduce to allow for exits
+
+### Exit Criteria
+Plan your exits:
+- Target profit levels
+- Maximum loss thresholds
+- Time-based exits (before trading ends)
+
+> **⚠️ Critical**: You must close all positions before `finalize_close` can be called. The vault must hold only USDC.
+
+---
+
+## Communication with Depositors
+
+### Best Practices
+
+1. **Weekly Updates** (recommended)
+   - Current performance
+   - Position summary (high-level)
+   - Market outlook
+
+2. **Significant Events**
+   - Large trades (>10% of AUM)
+   - Major wins or losses
+   - Strategy adjustments
+
+3. **Transparency Levels**
+   Choose what to disclose:
+   - Full transparency: All positions visible
+   - Delayed: Positions shown after 60 minutes
+   - Aggregate only: Just category exposure
+
+---
+
+## Lifecycle Transitions
+
+### Open → Trading
+- Automatic at `trading_start_ts`
+- Or call `start_trading` instruction
+- Initial AUM is locked at this moment
+
+### Trading → Settlement
+- Automatic at `trading_end_ts`
+- Or call `end_trading` instruction
+- No new trades allowed
+- Close all positions
+
+### Settlement → Closed
+- Call `finalize_close` instruction
+- Requires vault to hold only USDC
+- Performance fee is calculated
+- Investors can now redeem
+
+---
+
+## Common Mistakes to Avoid
+
+| Mistake | Consequence |
+|---------|-------------|
+| Not closing positions before end | Cannot finalize the fund |
+| Overconcentration | Large losses on single market |
+| Ignoring timeline | Forced to exit at bad prices |
+| Poor communication | Investor distrust |
+| Chasing losses | Emotional trading decisions |
+
+---
+
+## Next Steps
+
+- [Execute Your First Trade →](/docs/making-predictions)
+- [Understand Fund Completion →](/docs/fund-completion)
