@@ -1,0 +1,45 @@
+﻿{
+    "markets":  [
+                    {
+                        "ticker":  "KXBTCMAXY-25-DEC31-129999.99",
+                        "eventTicker":  "KXBTCMAXY-25",
+                        "marketType":  "binary",
+                        "title":  "How high will Bitcoin get this year?",
+                        "subtitle":  "",
+                        "yesSubTitle":  "$130,000 or above",
+                        "noSubTitle":  "$130,000 or above",
+                        "openTime":  1753765200,
+                        "closeTime":  1767243540,
+                        "expirationTime":  1769785200,
+                        "status":  "active",
+                        "volume":  10743641,
+                        "result":  "",
+                        "openInterest":  3477662,
+                        "canCloseEarly":  true,
+                        "earlyCloseCondition":  "If this event occurs, the market will close the following 10am ET.",
+                        "rulesPrimary":  "If the price of Bitcoin is Above 129999.99 by Dec 31, 2025, then the market resolves to Yes.",
+                        "rulesSecondary":  "",
+                        "yesBid":  null,
+                        "yesAsk":  "0.0100",
+                        "noBid":  "0.9900",
+                        "noAsk":  null,
+                        "accounts":  {
+                                         "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH":  {
+                                                                                              "marketLedger":  "BftE6fAV4x3sT1qLGdMbKbYFNmrj21gdboqhmnpsufzZ",
+                                                                                              "yesMint":  "84pF4bpxmtNedRpuYPpRmumf8KtSrYeJyUAvLwab3E53",
+                                                                                              "noMint":  "126Apky6i6kvnoDy2oKoy8t3vyY6eVC3ysceip1KFJRo",
+                                                                                              "isInitialized":  true,
+                                                                                              "redemptionStatus":  "pending"
+                                                                                          },
+                                         "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v":  {
+                                                                                              "marketLedger":  "EXBj8EvELSeN6jX8uUTfvnrLuFLJ6cMrpWYDmYhniaYx",
+                                                                                              "yesMint":  "8U2gUJpbtQoZrPJnA186spoQk3Jkgg3yucXUcPHgAcFy",
+                                                                                              "noMint":  "9VwE4wfgFq5ZJRfp875qxMPxBKn8o11tBiSKQeefBQdw",
+                                                                                              "isInitialized":  true,
+                                                                                              "redemptionStatus":  "pending"
+                                                                                          }
+                                     }
+                    }
+                ],
+    "cursor":  1
+}
