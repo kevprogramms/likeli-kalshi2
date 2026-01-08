@@ -74,231 +74,176 @@
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
-/* Logo */
-.brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+/* Logo - Circular */
+.brand-logo-circular {
   margin-bottom: 4rem;
   animation: fadeInDown 0.8s ease-out;
 }
 
-.logo-shape {
-  width: 56px;
-  height: 56px;
+.logo-circle {
+  width: 64px;
+  height: 64px;
   background: linear-gradient(135deg, #E63946 0%, #FF6B6B 100%);
-  border-radius: 16px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #FFF;
   box-shadow:
-    0 8px 24px rgba(230, 57, 70, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 12px 32px rgba(230, 57, 70, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.brand-name {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #FFF;
+.logo-circle:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 16px 40px rgba(230, 57, 70, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 /* Hero Text */
 .hero-text-container {
-  margin-bottom: 4rem;
+  position: relative;
   animation: fadeInUp 1s ease-out 0.2s both;
 }
 
-.hero-badge {
-  display: inline-block;
-  padding: 0.5rem 1.25rem;
-  background: rgba(230, 57, 70, 0.1);
-  border: 1px solid rgba(230, 57, 70, 0.3);
-  border-radius: 50px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  color: #E63946;
-  margin-bottom: 2rem;
-  backdrop-filter: blur(10px);
+/* Background Text - "Institutional" */
+.hero-bg-text {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8rem;
+  font-weight: 900;
+  font-style: italic;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.03);
+  text-stroke: 1px rgba(255, 255, 255, 0.03);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
 }
 
-.hero-title {
-  font-size: 5.5rem;
+/* New Hero Title */
+.hero-title-new {
+  position: relative;
+  z-index: 1;
+  font-size: 6rem;
   font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   letter-spacing: -0.03em;
 }
 
-.title-line {
+.title-white {
   display: block;
+  color: #FFFFFF;
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, #E63946 0%, #FF6B6B 50%, #FFA5A5 100%);
+.title-red {
+  display: block;
+  background: linear-gradient(135deg, #E63946 0%, #FF6B6B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.hero-subtitle {
-  font-size: 1.25rem;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.6);
-  max-width: 700px;
-  margin: 0 auto 2.5rem;
+.hero-subtitle-new {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.55);
+  max-width: 750px;
+  margin: 0 auto 3rem;
   font-weight: 400;
 }
 
-/* CTA Buttons */
-.hero-cta-group {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  align-items: center;
-}
-
-.btn-primary {
+/* Launch Button */
+.btn-launch {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1.125rem 2.5rem;
-  background: linear-gradient(135deg, #E63946 0%, #FF6B6B 100%);
+  padding: 1rem 2.5rem;
+  background: #FFFFFF;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: 600;
-  color: #FFF;
+  font-weight: 700;
+  color: #000000;
   text-decoration: none;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 24px rgba(230, 57, 70, 0.4);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
   position: relative;
   overflow: hidden;
 }
 
-.btn-primary::before {
+.btn-launch::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.1) 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.3s;
 }
 
-.btn-primary:hover {
+.btn-launch:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(230, 57, 70, 0.5);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.25);
+  background: #FFFFFF;
 }
 
-.btn-primary:hover::before {
+.btn-launch:hover::before {
   opacity: 1;
 }
 
-.btn-primary svg {
+.btn-launch svg {
   transition: transform 0.3s;
 }
 
-.btn-primary:hover svg {
+.btn-launch:hover svg {
   transform: translateX(4px);
 }
 
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  padding: 1.125rem 2.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #FFF;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.3s;
-  backdrop-filter: blur(10px);
-}
+/* Remove old stats - they'll be added as a separate section below */
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-}
-
-/* Hero Stats */
-.hero-stats {
-  display: flex;
-  gap: 3rem;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 3rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  backdrop-filter: blur(20px);
-  animation: fadeInUp 1s ease-out 0.4s both;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.stat-value {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #FFF;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Scroll Indicator */
+/* Scroll Indicator - Updated */
 .scroll-indicator-modern {
   position: absolute;
-  bottom: 3rem;
+  bottom: 4rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.3);
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   z-index: 10;
-  animation: fadeIn 1s ease-out 1s both;
+  animation: fadeIn 1s ease-out 1.2s both;
+  cursor: pointer;
+}
+
+.scroll-indicator-modern:hover {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .scroll-line {
   width: 1px;
-  height: 60px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 100%);
+  height: 50px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 100%);
   animation: scrollLineMove 2s ease-in-out infinite;
 }
 
 @keyframes scrollLineMove {
   0%, 100% { transform: translateY(0); opacity: 1; }
-  50% { transform: translateY(10px); opacity: 0.5; }
+  50% { transform: translateY(8px); opacity: 0.4; }
 }
 
 /* ============================================
@@ -1061,8 +1006,13 @@
    ============================================ */
 
 @media (max-width: 1024px) {
-  .hero-title {
-    font-size: 4rem;
+  .hero-title-new {
+    font-size: 4.5rem;
+  }
+
+  .hero-bg-text {
+    font-size: 6rem;
+    top: -50px;
   }
 
   .section-title {
@@ -1077,40 +1027,35 @@
   .vault-grid {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
-
-  .hero-stats {
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .stat-divider {
-    width: 100px;
-    height: 1px;
-  }
 }
 
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.5rem;
+  .hero-title-new {
+    font-size: 3rem;
   }
 
-  .hero-subtitle {
+  .hero-bg-text {
+    font-size: 3.5rem;
+    top: -30px;
+  }
+
+  .hero-subtitle-new {
     font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .hero-subtitle-new br {
+    display: none;
   }
 
   .section-title {
     font-size: 2rem;
   }
 
-  .hero-cta-group {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .btn-primary,
-  .btn-secondary {
+  .btn-launch {
     width: 100%;
     justify-content: center;
+    padding: 1rem 2rem;
   }
 
   .vault-grid {
@@ -1132,5 +1077,15 @@
 
   .cta-title {
     font-size: 2.5rem;
+  }
+
+  .logo-circle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .logo-circle svg {
+    width: 24px;
+    height: 24px;
   }
 }

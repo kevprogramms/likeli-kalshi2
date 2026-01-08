@@ -32,55 +32,38 @@ function LandingPage() {
             transform: `scale(${heroScale})`
           }}
         >
-          {/* Logo */}
-          <div className="brand-logo">
-            <div className="logo-shape">
-              <span>L</span>
+          {/* Logo - Circular with smaller size */}
+          <div className="brand-logo-circular">
+            <div className="logo-circle">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path d="M7 17L17 7M17 7H7M17 7V17" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
-            <span className="brand-name">LIKELI</span>
           </div>
 
           {/* Hero Content */}
           <div className="hero-text-container">
-            <div className="hero-badge">NON-CUSTODIAL TRADING PLATFORM</div>
-            <h1 className="hero-title">
-              <span className="title-line">Multi-Chain Vaults</span>
-              <span className="title-line gradient-text">Without Custody Risk</span>
+            {/* Background Text */}
+            <div className="hero-bg-text">Institutional</div>
+
+            {/* Main Headline */}
+            <h1 className="hero-title-new">
+              <span className="title-white">Trade Your</span>
+              <span className="title-red">Predictions</span>
             </h1>
-            <p className="hero-subtitle">
-              Execute across Solana, Base, Polygon, and Hyperliquid through independent
-              smart contract sleeves. Your funds, your control, zero trust required.
+
+            <p className="hero-subtitle-new">
+              Non-custodial multi-sleeve vaults. Multi-chain execution<br/>
+              across Solana, Base, Polygon, and Hyperliquid. Precision<br/>
+              trading for prediction markets.
             </p>
 
-            <div className="hero-cta-group">
-              <a href="/markets" className="btn-primary">
-                <span>Launch App</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </a>
-              <a href="#features" className="btn-secondary">
-                <span>Learn More</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="hero-stats">
-            <div className="stat-item">
-              <div className="stat-value">$24M+</div>
-              <div className="stat-label">Total Value Locked</div>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <div className="stat-value">4</div>
-              <div className="stat-label">Chains Supported</div>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <div className="stat-value">0%</div>
-              <div className="stat-label">Custody Risk</div>
-            </div>
+            <a href="/markets" className="btn-launch">
+              <span>Launch Application</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
           </div>
         </div>
 
